@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>よくある質問</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Dela+Gothic+One&family=M+PLUS+1p:wght@500;800&display=swap">
+<style>
+/* Layout concept: RPG menu windows stacked down a phone screen, matching the rich menu (navy ground, white-framed windows, pixel labels). */
+html{-webkit-text-size-adjust:100%}
+:root{
+  --ground:#070B26; --win:#0F1650; --frame:#FFFFFF; --inner:#6C7BD9;
+  --gold:#FFD54A; --ember:#FF7A2F; --quest:#3A1406; --mint:#5BE37D;
+  --ink:#FFFFFF; --soft:#C9D2FF;
+  --pixel:'DotGothic16',ui-monospace,monospace;
+  --display:'Dela Gothic One','Hiragino Sans','Yu Gothic',sans-serif;
+  --body:'M PLUS 1p','Hiragino Sans','Yu Gothic',sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--ground)}
+body{color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.75;
+  background:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px) 0 0/24px 24px,linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px) 0 0/24px 24px,var(--ground);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:34px}
+.top{display:flex;flex-direction:column;gap:6px;padding-top:6px}
+.eyebrow{font-family:var(--pixel);color:var(--gold);letter-spacing:.12em;font-size:15px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(34px,9vw,48px);line-height:1.15;margin:0;text-shadow:4px 4px 0 #000;text-wrap:balance}
+.lead{color:var(--soft);margin:4px 0 0}
+.win{position:relative;background:var(--win);border:5px solid var(--frame);border-radius:12px;
+  box-shadow:inset 0 0 0 4px var(--win),inset 0 0 0 6px var(--inner),0 6px 0 #000;padding:30px 20px 20px}
+.win.quest{background:var(--quest);box-shadow:inset 0 0 0 4px var(--quest),inset 0 0 0 6px var(--ember),0 6px 0 #000}
+.tab{position:absolute;top:0;left:16px;transform:translateY(-55%);background:var(--ground);border:4px solid var(--frame);border-radius:8px;padding:1px 12px;font-family:var(--pixel);font-size:14px;color:var(--gold);letter-spacing:.08em}
+.quest .tab{color:var(--ember)}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:0 0 10px;text-wrap:balance}
+p{margin:0 0 10px}
+p:last-child{margin-bottom:0}
+.hl{color:var(--gold);font-weight:800}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.list li{padding-left:22px;position:relative}
+.list li::before{content:'▶';position:absolute;left:0;top:0;color:var(--gold);font-size:13px;line-height:1.75rem}
+.quest .list li::before{content:'◆';color:var(--ember)}
+.stats{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-family:var(--pixel);font-size:15px}
+.stats dt{color:var(--gold)}
+.stats dd{margin:0;color:var(--ink);min-width:0}
+.bar{height:16px;border:3px solid var(--frame);background:#000;margin-top:6px;position:relative}
+.bar i{position:absolute;inset:2px;background:linear-gradient(90deg,#FF5A3C,var(--gold) 60%,var(--mint))}
+.btn{display:block;text-align:center;text-decoration:none;font-family:var(--display);font-size:20px;color:#000;background:var(--gold);border:4px solid #000;border-radius:10px;padding:14px 12px;box-shadow:5px 5px 0 #000}
+.btn:focus-visible{outline:3px solid var(--mint);outline-offset:3px}
+.btn.alt{background:var(--ember)}
+.small{font-size:13px;color:var(--soft)}
+.steps{counter-reset:s;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}
+.steps li::before{content:counter(s);font-family:var(--display);font-size:20px;width:44px;height:44px;display:grid;place-items:center;background:var(--ground);border:3px solid var(--gold);color:var(--gold);border-radius:8px}
+.steps b{display:block}
+details{border-top:2px dashed rgba(201,210,255,.35);padding:14px 0}
+details:first-of-type{border-top:0;padding-top:0}
+summary{cursor:pointer;list-style:none;font-weight:800;display:flex;gap:10px;align-items:baseline}
+summary::-webkit-details-marker{display:none}
+summary::before{content:'Q';font-family:var(--display);color:var(--gold);flex:none}
+summary::after{content:'▼';margin-left:auto;font-size:12px;color:var(--soft);transition:transform .2s}
+details[open] summary::after{transform:rotate(180deg)}
+.ans{margin-top:8px;padding-left:26px;color:var(--soft)}
+.ans b{color:var(--ink)}
+.price{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
+.price div{background:var(--ground);border:3px solid var(--inner);border-radius:8px;padding:10px 6px;text-align:center;min-width:0}
+.price div.rec{border-color:var(--gold)}
+.price b{display:block;font-family:var(--pixel);color:var(--gold);font-size:14px}
+.price strong{display:block;font-family:var(--display);font-weight:400;font-size:19px;color:var(--ink)}
+.price span{display:block;font-size:12px;line-height:1.5;color:var(--soft)}
+.free{display:inline-block;background:var(--mint);color:#000;font-family:var(--pixel);padding:1px 10px;border-radius:4px}
+@media (max-width:480px){.price{grid-template-columns:1fr}.price div{display:grid;grid-template-columns:auto auto;justify-content:space-between;align-items:center;text-align:left;padding:10px 14px;gap:2px 10px}.price b{grid-column:1}.price strong{grid-column:2;grid-row:1/3;font-size:22px}.price span{grid-column:1}.price span br{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <div class="eyebrow">▶ HELP</div>
+    <h1>よくある質問</h1>
+    <p class="lead">料金や進め方など、よく聞かれることをまとめました。気になる質問をタップしてください。</p>
+  </header>
+
+  <section class="win">
+    <div class="tab">料金</div>
+    <h2>料金プラン（月額）</h2>
+    <p><span class="free">最初の1か月 無料</span></p>
+    <div class="price">
+      <div><b>ライト</b><strong>12,000円</strong><span>毎日LINE<br>＋面談 週1回30分</span></div>
+      <div class="rec"><b>スタンダード</b><strong>18,000円</strong><span>毎日LINE<br>＋面談 週1回60分<br>または週2回30分</span></div>
+      <div><b>しっかり</b><strong>25,000円</strong><span>毎日LINE<br>＋面談 週2回60分</span></div>
+    </div>
+  </section>
+
+  <section class="win">
+    <div class="tab">Q&amp;A</div>
+    <details open>
+      <summary>どんなふうに勉強を進めるの？</summary>
+      <div class="ans">毎日LINEで<b>「今日やること」</b>を送ります。学校の単語やワーク、オリジナル問題など、その日にやる分だけです。やったら答えを写真で送ってもらい、面談で理解できているかを確認します。</div>
+    </details>
+    <details>
+      <summary>面談はどこでやるの？</summary>
+      <div class="ans">すべて<b>オンライン</b>です。家から参加できます。</div>
+    </details>
+    <details>
+      <summary>対象の学年は？</summary>
+      <div class="ans"><b>中学生・高校生</b>が対象です。</div>
+    </details>
+    <details>
+      <summary>英語以外の科目もみてもらえる？</summary>
+      <div class="ans">基本は<b>英語</b>です。数学は希望があれば相談してください。</div>
+    </details>
+    <details>
+      <summary>勉強が苦手でもついていける？</summary>
+      <div class="ans">大丈夫です。<b>まずは赤点回避、その次に平均点</b>を目指します。毎日やることを細かく出すので、何をすればいいか迷いません。</div>
+    </details>
+    <details>
+      <summary>1か月無料ってどういうこと？</summary>
+      <div class="ans">最初の<b>1か月は料金がかかりません</b>。実際の進め方を体験してから続けるか決められます。</div>
+    </details>
+    <details>
+      <summary>公式LINEのゲームや勉強法も使うの？</summary>
+      <div class="ans">はい。公式LINEで配っている<b>英語ゲーム</b>と<b>4ステップの勉強法</b>を使いながら進めます。</div>
+    </details>
+  </section>
+
+  <section class="win quest">
+    <div class="tab">NEXT</div>
+    <h2>ほかに聞きたいことは？</h2>
+    <p>このLINEのトーク画面から、気軽にメッセージを送ってください。くわしく話を聞きたい人は「無料相談」からどうぞ。</p>
+  </section>
+</main>
+
+</body>
+</html>

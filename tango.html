@@ -1,0 +1,983 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>WordDojo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/*
+  Layout concept: home is a deck-management hub — "make a deck" is the hero action,
+  the user's own decks are the main list, and the built-in word set is demoted to a
+  thin horizontal strip labeled as a bundled sample. Studying any deck opens the same
+  full-screen sparring view: one ink-stamped flashcard, flipped by tap, judged by a
+  drag-swipe, tracked by a combo flame.
+*/
+:root{
+  --bg:#E7EBDE; --panel:#DBE2CC; --panel-line:rgba(27,36,30,.14);
+  --ink:#1B241E; --ink-soft:#56634F; --ink-faint:#7C8773;
+  --accent:#C1432D; --accent-ink:#FFF6EE;
+  --gold:#9C6E1C;
+  --card-front:#1B241E; --card-front-ink:#F3EFE2; --card-front-sub:#C7CBB9;
+  --card-back:#F6F3E6; --card-back-ink:#1B241E; --card-back-sub:#56634F;
+  --good:#3E7D4C; --bad:#B7442F;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121810; --panel:#1C2518; --panel-line:rgba(231,236,217,.14);
+    --ink:#E9EEDB; --ink-soft:#AAB79A; --ink-faint:#71806A;
+    --accent:#E2663F; --accent-ink:#1E0E08;
+    --gold:#D9A53B;
+    --card-front:#242F1F; --card-front-ink:#F3EFE2; --card-front-sub:#9BA68A;
+    --card-back:#1E2819; --card-back-ink:#E9EEDB; --card-back-sub:#AAB79A;
+    --good:#5FAE6E; --bad:#E2663F;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#121810; --panel:#1C2518; --panel-line:rgba(231,236,217,.14);
+  --ink:#E9EEDB; --ink-soft:#AAB79A; --ink-faint:#71806A;
+  --accent:#E2663F; --accent-ink:#1E0E08;
+  --gold:#D9A53B;
+  --card-front:#242F1F; --card-front-ink:#F3EFE2; --card-front-sub:#9BA68A;
+  --card-back:#1E2819; --card-back-ink:#E9EEDB; --card-back-sub:#AAB79A;
+  --good:#5FAE6E; --bad:#E2663F;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box;}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Zen Kaku Gothic New",system-ui,sans-serif;
+  min-height:100%;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+  padding-block:20px 32px;
+  overflow-x:hidden;
+}
+html,body{height:100%;}
+h1,h2,h3{font-family:"Shippori Mincho",serif; text-wrap:balance; margin:0;}
+.mono{font-family:"DM Mono",monospace;}
+button{font:inherit; cursor:pointer;}
+input,textarea{font:inherit;}
+
+#app{max-width:520px; margin:0 auto; display:flex; flex-direction:column; min-height:100%;}
+
+/* ---------- HOME ---------- */
+.home-head{padding-block:8px 16px; display:flex; flex-direction:column; gap:4px;}
+.brand{display:flex; align-items:baseline; gap:10px;}
+.brand h1{font-size:28px; font-weight:700; letter-spacing:.02em;}
+.brand .stamp{
+  font-family:"DM Mono",monospace; font-size:11px; letter-spacing:.08em;
+  color:var(--accent-ink); background:var(--accent); padding:3px 7px; border-radius:3px;
+  transform:rotate(-3deg); white-space:nowrap;
+}
+.tagline{color:var(--ink-soft); font-size:13.5px; line-height:1.5; max-width:40ch;}
+
+.cta-primary{
+  background:var(--accent); color:var(--accent-ink); border:none; border-radius:13px;
+  padding:15px 16px; font-weight:700; font-size:15px; width:100%;
+  display:flex; align-items:center; justify-content:center; gap:8px; margin-top:4px;
+}
+.cta-primary:active{transform:scale(.99);}
+
+.new-deck-form{display:flex; gap:8px; margin-top:10px;}
+.new-deck-form input{flex:1; border:1px solid var(--panel-line); background:var(--panel); color:var(--ink); border-radius:10px; padding:11px 12px; font-size:14px;}
+.new-deck-form button{border-radius:10px; padding:11px 14px; font-weight:700; border:1px solid var(--accent); background:var(--accent); color:var(--accent-ink); white-space:nowrap;}
+.new-deck-form button.cancel{background:transparent; color:var(--ink-soft); border-color:var(--panel-line);}
+
+.section-label{
+  font-family:"DM Mono",monospace; font-size:11px; letter-spacing:.1em; color:var(--ink-faint);
+  margin-top:22px; margin-bottom:9px; text-transform:uppercase; display:flex; justify-content:space-between;
+}
+
+.empty-state{border:1px dashed var(--panel-line); border-radius:12px; padding:20px; text-align:center; color:var(--ink-soft); font-size:13px; line-height:1.65;}
+
+.my-deck-list{display:flex; flex-direction:column; gap:10px;}
+.my-deck-tile{border:1px solid var(--panel-line); background:var(--panel); border-radius:12px; padding:14px; display:flex; flex-direction:column; gap:9px;}
+.my-deck-tile .top-row{display:flex; align-items:baseline; justify-content:space-between; gap:8px;}
+.my-deck-tile .name{font-family:"Shippori Mincho",serif; font-weight:700; font-size:16.5px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.my-deck-tile .count{font-family:"DM Mono",monospace; font-size:11px; color:var(--ink-faint); white-space:nowrap;}
+.my-deck-tile .bar-track{height:5px; border-radius:3px; background:var(--panel-line); overflow:hidden;}
+.my-deck-tile .bar-fill{height:100%; background:var(--accent); border-radius:3px; transition:width .3s ease;}
+.tile-btns{display:flex; gap:8px;}
+.tile-btns button{flex:1; border-radius:9px; padding:9px 10px; font-size:12.5px; font-weight:700; border:1px solid var(--panel-line); background:transparent; color:var(--ink);}
+.tile-btns button.study{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+.tile-btns button[disabled]{opacity:.45;}
+
+.sample-note{font-size:11.5px; color:var(--ink-faint); line-height:1.55; margin-bottom:8px;}
+.sample-strip-wrap{overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch;}
+.sample-strip{display:flex; gap:8px; width:max-content;}
+.sample-pill{flex:0 0 auto; border:1px solid var(--panel-line); background:transparent; color:var(--ink-soft); border-radius:10px; padding:10px 12px; display:flex; flex-direction:column; gap:4px; min-width:122px; text-align:left;}
+.sample-pill .name{font-size:12.5px; font-weight:700; color:var(--ink);}
+.sample-pill .count{font-family:"DM Mono",monospace; font-size:10.5px; color:var(--ink-faint);}
+
+.home-foot{margin-top:20px; color:var(--ink-faint); font-size:12px; line-height:1.6;}
+
+/* ---------- DECK EDIT ---------- */
+.deckedit-screen{display:flex; flex-direction:column; gap:4px;}
+.deckedit-head{display:flex; align-items:center; gap:10px; margin-bottom:6px;}
+.deckedit-name{flex:1; min-width:0;}
+.deckedit-name h2{font-size:18px; font-weight:700; cursor:text; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.deckedit-name input{font-size:18px; font-family:"Shippori Mincho",serif; font-weight:700; border:none; border-bottom:2px solid var(--accent); background:transparent; color:var(--ink); width:100%; padding:2px 0;}
+.deckedit-name input:focus{outline:none;}
+
+.card-list{display:flex; flex-direction:column; gap:8px; margin-top:12px;}
+.card-row{display:flex; align-items:center; gap:8px; border:1px solid var(--panel-line); background:var(--panel); border-radius:10px; padding:11px 12px;}
+.card-row .main{flex:1; min-width:0; cursor:pointer; display:flex; flex-direction:column; gap:1px;}
+.card-row .w{font-family:"DM Mono",monospace; font-weight:700; font-size:14px;}
+.card-row .m{font-size:12.5px; color:var(--ink-soft); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.card-row .del{border:none; background:none; color:var(--bad); font-size:17px; padding:4px 7px; line-height:1;}
+.card-row .cat-tag{
+  font-family:"DM Mono",monospace; font-size:10px; letter-spacing:.04em; color:var(--ink-faint);
+  border:1px solid var(--panel-line); border-radius:999px; padding:2px 7px; margin-top:3px; display:inline-block; width:max-content;
+}
+
+.filter-chips{display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; -webkit-overflow-scrolling:touch; margin-top:10px;}
+.chip{flex:0 0 auto; border:1px solid var(--panel-line); background:transparent; color:var(--ink-soft); border-radius:999px; padding:7px 12px; font-size:12px; font-weight:700; white-space:nowrap;}
+.chip.active{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+
+.group-header{font-family:"DM Mono",monospace; font-size:10.5px; letter-spacing:.08em; color:var(--ink-faint); margin:14px 0 2px; text-transform:uppercase;}
+.group-header:first-child{margin-top:4px;}
+
+.confirm-row{display:flex; gap:8px; align-items:center; justify-content:space-between; background:var(--panel); border:1px solid var(--bad); border-radius:10px; padding:10px 12px; font-size:12.5px;}
+.confirm-row .btns{display:flex; gap:6px;}
+.confirm-row button{border-radius:7px; padding:7px 11px; font-size:12px; font-weight:700;}
+.confirm-row .danger{background:var(--bad); color:#fff; border:none;}
+.confirm-row .cancel{background:transparent; border:1px solid var(--panel-line); color:var(--ink);}
+
+.add-card-btn{margin-top:12px; width:100%; border:1px dashed var(--panel-line); background:transparent; color:var(--ink-soft); border-radius:10px; padding:13px; font-weight:700; font-size:13.5px;}
+.card-form{margin-top:12px; display:flex; flex-direction:column; gap:10px; border:1px solid var(--panel-line); background:var(--panel); border-radius:12px; padding:14px;}
+.card-form .field{display:flex; flex-direction:column; gap:4px;}
+.card-form label{font-size:10.5px; color:var(--ink-faint); font-family:"DM Mono",monospace; letter-spacing:.05em; text-transform:uppercase;}
+.card-form input, .card-form textarea{border:1px solid var(--panel-line); background:var(--bg); color:var(--ink); border-radius:8px; padding:9px 10px; font-size:13.5px; font-family:inherit; resize:vertical;}
+.card-form textarea{min-height:48px;}
+.card-form .btn-row{display:flex; gap:8px; margin-top:2px;}
+.card-form .btn-row button{flex:1; border-radius:9px; padding:11px; font-weight:700; font-size:13.5px;}
+.card-form .save{background:var(--accent); color:var(--accent-ink); border:none;}
+.card-form .cancel{background:transparent; border:1px solid var(--panel-line); color:var(--ink);}
+
+.study-cta{margin-top:12px;}
+.deck-danger{margin-top:28px; text-align:center;}
+.deck-danger button{background:none; border:none; color:var(--ink-faint); font-size:12px; text-decoration:underline; padding:6px;}
+
+/* ---------- STUDY ---------- */
+.study-screen{display:flex; flex-direction:column; min-height:100%; gap:14px;}
+.study-top{display:flex; align-items:center; gap:12px;}
+.back-btn{
+  background:none; border:1px solid var(--panel-line); color:var(--ink);
+  width:34px; height:34px; border-radius:50%; font-size:16px; line-height:1;
+  display:flex; align-items:center; justify-content:center; flex:none;
+}
+.study-title{flex:1; min-width:0;}
+.study-title .cat-name{font-family:"Shippori Mincho",serif; font-size:16px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.study-title .cat-pos{font-family:"DM Mono",monospace; font-size:11px; color:var(--ink-faint);}
+
+.combo-pill{
+  display:flex; align-items:center; gap:5px; font-family:"DM Mono",monospace; font-size:13px;
+  background:var(--panel); border:1px solid var(--panel-line); border-radius:999px; padding:5px 10px 5px 8px;
+  color:var(--gold); transition:transform .18s ease; flex:none;
+}
+.combo-pill.pop{transform:scale(1.18);}
+.combo-pill .flame{font-size:14px;}
+
+.progress-track{height:4px; border-radius:2px; background:var(--panel); overflow:hidden;}
+.progress-fill{height:100%; background:var(--accent); border-radius:2px; transition:width .25s ease;}
+
+.stage{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; padding-block:6px; min-height:360px;}
+
+.card-wrap{width:100%; max-width:360px; aspect-ratio:3/4; perspective:1200px; position:relative; touch-action:pan-y;}
+.card{
+  position:absolute; inset:0; border-radius:18px; cursor:pointer; user-select:none;
+  transform-style:preserve-3d; transition:transform .12s ease;
+  box-shadow:0 10px 24px rgba(0,0,0,.18);
+}
+.card.flipped .face-front{transform:rotateY(180deg);}
+.card.flipped .face-back{transform:rotateY(0deg);}
+.face{
+  position:absolute; inset:0; border-radius:18px; backface-visibility:hidden;
+  display:flex; flex-direction:column; padding:24px; transition:transform .45s cubic-bezier(.4,.1,.2,1);
+}
+.face-front{background:var(--card-front); color:var(--card-front-ink); transform:rotateY(0deg); align-items:center; justify-content:center; text-align:center; gap:14px;}
+.face-front .pos-tag{
+  font-family:"DM Mono",monospace; font-size:11px; letter-spacing:.14em; color:var(--card-front-sub);
+  border:1px solid var(--card-front-sub); padding:3px 9px; border-radius:999px;
+}
+.face-front .eng{font-family:"Shippori Mincho",serif; font-size:38px; font-weight:700; line-height:1.15; word-break:break-word;}
+.face-front .hint{font-size:11.5px; color:var(--card-front-sub); margin-top:4px;}
+.face-front .icon{font-size:46px; filter:drop-shadow(0 4px 6px rgba(0,0,0,.3));}
+
+.face-back{background:var(--card-back); color:var(--card-back-ink); transform:rotateY(-180deg); overflow-y:auto; gap:10px;}
+.face-back .eng-small{font-family:"DM Mono",monospace; font-size:13px; color:var(--card-back-sub); letter-spacing:.04em;}
+.face-back .meaning{font-family:"Shippori Mincho",serif; font-size:23px; font-weight:700; line-height:1.3;}
+.face-back .nuance{font-size:13px; line-height:1.6; color:var(--card-back-ink);}
+.face-back .ex-en{font-size:14px; line-height:1.5; font-style:italic; border-left:3px solid var(--accent); padding-left:10px; margin-top:2px;}
+.face-back .ex-ja{font-size:12.5px; color:var(--card-back-sub); padding-left:13px;}
+
+.swipe-flag{
+  position:absolute; top:16px; font-family:"DM Mono",monospace; font-weight:700; font-size:14px;
+  letter-spacing:.08em; padding:5px 10px; border-radius:6px; opacity:0; transition:opacity .08s;
+}
+.swipe-flag.ok{left:16px; color:var(--good); border:2px solid var(--good); transform:rotate(-8deg);}
+.swipe-flag.ng{right:16px; color:var(--bad); border:2px solid var(--bad); transform:rotate(8deg);}
+
+.hint-text{text-align:center; font-size:12px; color:var(--ink-faint); min-height:16px;}
+
+.action-row{display:flex; gap:10px; justify-content:center; padding-block:6px 4px; opacity:0; transform:translateY(6px); transition:opacity .2s ease, transform .2s ease; pointer-events:none;}
+.action-row.show{opacity:1; transform:translateY(0); pointer-events:auto;}
+.act-btn{
+  flex:1; max-width:160px; border-radius:12px; border:1px solid var(--panel-line); background:var(--panel);
+  color:var(--ink); padding:13px 10px; font-size:14px; font-weight:700; display:flex; flex-direction:column; align-items:center; gap:2px;
+}
+.act-btn .sub{font-family:"DM Mono",monospace; font-size:10.5px; font-weight:400; color:var(--ink-faint);}
+.act-btn.ng{color:var(--bad); border-color:var(--bad);}
+.act-btn.ok{color:var(--good); border-color:var(--good);}
+
+/* ---------- SUMMARY ---------- */
+.summary{display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; gap:18px; text-align:center; padding-block:30px;}
+.summary .badge{font-size:52px;}
+.summary h2{font-size:24px;}
+.summary .stats{display:flex; gap:22px;}
+.summary .stat{display:flex; flex-direction:column; gap:2px;}
+.summary .stat b{font-family:"DM Mono",monospace; font-size:26px; color:var(--accent);}
+.summary .stat span{font-size:11.5px; color:var(--ink-soft);}
+.summary-btns{display:flex; flex-direction:column; gap:8px; width:100%; max-width:280px; margin-top:6px;}
+.summary-btns button{
+  border-radius:12px; padding:12px; font-weight:700; font-size:14px; border:1px solid var(--panel-line);
+  background:var(--panel); color:var(--ink);
+}
+.summary-btns button.primary{background:var(--accent); color:var(--accent-ink); border-color:var(--accent);}
+
+[hidden]{display:none!important;}
+@media (prefers-reduced-motion: reduce){ *{transition-duration:.01ms!important; animation-duration:.01ms!important;} }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Shippori+Mincho:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+
+<div id="app"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- bundled sample deck (demoted "付属") ---------------- */
+var SAMPLE_WORDS = [
+ {w:"go",p:"動",c:0,m:"行く",n:"今いる場所から離れて移動する動き。帰ってくる前提の come と対になる方向性を持つ。",ex:"I go to school by bike.",exj:"私は自転車で学校に行く。",ic:"🚶"},
+ {w:"come",p:"動",c:0,m:"来る",n:"話し手がいる場所、または話題の中心に向かって近づく動き。",ex:"Can you come here for a second?",exj:"ちょっとここに来てくれる?",ic:"👋"},
+ {w:"make",p:"動",c:0,m:"作る・〜にする",n:"材料や行動から何かを生み出すこと。make someone happy のように人の状態を作る時にも使う。",ex:"This song makes me happy.",exj:"この歌は私を幸せにする。",ic:"🛠️"},
+ {w:"take",p:"動",c:0,m:"取る・持っていく",n:"自分の手元に引き寄せる、連れていく動き。bring は相手の方へ、take は自分や別の場所へ向かうイメージ。",ex:"Take an umbrella with you.",exj:"傘を持っていって。",ic:"🧳"},
+ {w:"get",p:"動",c:0,m:"手に入れる・〜になる",n:"今までなかった状態に変化する感覚。物をもらう時も気持ちが変わる時も使える万能動詞。",ex:"I got a new phone.",exj:"新しい携帯を手に入れた。",ic:"📦"},
+ {w:"give",p:"動",c:0,m:"与える・渡す",n:"自分の手から相手の手へ、物や気持ちを移す動き。",ex:"Could you give me a hand?",exj:"手伝ってくれない?",ic:"🎁"},
+ {w:"put",p:"動",c:0,m:"置く",n:"物をある場所に位置させる動作。on, in, away など場所を表す語とセットで使う。",ex:"Put your bag on the desk.",exj:"バッグを机の上に置いて。",ic:"📍"},
+ {w:"keep",p:"動",c:0,m:"保つ・持ち続ける",n:"今の状態をそのまま変えずに続けること。",ex:"Keep calm and listen.",exj:"落ち着いて聞いて。",ic:"🔒"},
+ {w:"let",p:"動",c:0,m:"〜させてあげる",n:"相手がしたいことを止めずに許すニュアンス。make の「強制」と違い、let は「許可」。",ex:"Let me try it.",exj:"私にやらせて。",ic:"🚪"},
+ {w:"try",p:"動",c:0,m:"試す・やってみる",n:"結果がどうなるか分からなくても一歩踏み出す動き。",ex:"Just try it once.",exj:"一回やってみなよ。",ic:"🎯"},
+ {w:"happy",p:"形",c:1,m:"嬉しい・幸せ",n:"満たされて心が軽い状態。",ex:"She looks happy today.",exj:"彼女は今日嬉しそうだ。",ic:"😊"},
+ {w:"sad",p:"形",c:1,m:"悲しい",n:"失ったものや期待が外れたときの、心が沈む感覚。",ex:"He felt sad after the game.",exj:"彼は試合の後悲しくなった。",ic:"😢"},
+ {w:"angry",p:"形",c:1,m:"怒っている",n:"不満が外に向かって爆発しそうな気持ち。",ex:"Don't be angry with me.",exj:"私に怒らないで。",ic:"😠"},
+ {w:"tired",p:"形",c:1,m:"疲れている",n:"エネルギーが切れて動きたくない状態。",ex:"I'm too tired to walk.",exj:"歩くのも疲れた。",ic:"😴"},
+ {w:"excited",p:"形",c:1,m:"ワクワクしている",n:"これから起きることへの期待で気持ちが高まる状態。",ex:"We're excited about the trip.",exj:"私たちは旅行にワクワクしている。",ic:"🤩"},
+ {w:"nervous",p:"形",c:1,m:"緊張している",n:"失敗を恐れて落ち着かない気持ち。",ex:"I'm nervous about the test.",exj:"テストで緊張している。",ic:"😬"},
+ {w:"surprised",p:"形",c:1,m:"驚いている",n:"予想していなかったことが起きたときの反応。",ex:"I was surprised by the news.",exj:"そのニュースに驚いた。",ic:"😲"},
+ {w:"proud",p:"形",c:1,m:"誇りに思う",n:"自分や誰かの頑張りを胸を張って認める気持ち。",ex:"I'm proud of you.",exj:"あなたを誇りに思うよ。",ic:"🦁"},
+ {w:"worried",p:"形",c:1,m:"心配している",n:"悪い結果を想像して気になっている状態。",ex:"She's worried about her exam.",exj:"彼女は試験を心配している。",ic:"😟"},
+ {w:"relieved",p:"形",c:1,m:"ホッとしている",n:"心配事がなくなって気持ちが軽くなる感覚。",ex:"I was relieved to hear that.",exj:"それを聞いてホッとした。",ic:"😌"},
+ {w:"homework",p:"名",c:2,m:"宿題",n:"学校から持ち帰ってやる課題。複数個あっても常に単数扱い。",ex:"I have a lot of homework today.",exj:"今日は宿題がたくさんある。",ic:"📓"},
+ {w:"classmate",p:"名",c:2,m:"同級生",n:"同じクラスで一緒に学ぶ相手。",ex:"He's my classmate from class 2.",exj:"彼は2組の同級生だ。",ic:"🧑‍🤝‍🧑"},
+ {w:"schedule",p:"名",c:2,m:"予定・時間割",n:"いつ何をするかの計画表。",ex:"Check today's schedule.",exj:"今日の予定を確認して。",ic:"🗒️"},
+ {w:"lesson",p:"名",c:2,m:"授業・教訓",n:"学校の授業そのものと、経験から学ぶ教訓の両方の意味を持つ。",ex:"That was a good lesson for me.",exj:"それは私にとっていい教訓になった。",ic:"📖"},
+ {w:"exam",p:"名",c:2,m:"試験",n:"実力を測るための試験。test よりやや大きく正式な響き。",ex:"The exam starts at nine.",exj:"試験は9時に始まる。",ic:"📝"},
+ {w:"holiday",p:"名",c:2,m:"休日・祝日",n:"学校や仕事が休みになる日。",ex:"We have no school on holidays.",exj:"祝日は学校がない。",ic:"🏖️"},
+ {w:"uniform",p:"名",c:2,m:"制服",n:"みんなが同じ形で着る決まった服。",ex:"Wear your uniform tomorrow.",exj:"明日は制服を着てきて。",ic:"👔"},
+ {w:"locker",p:"名",c:2,m:"ロッカー",n:"荷物をしまっておく個人用の棚。",ex:"My locker is next to the door.",exj:"私のロッカーはドアの隣だ。",ic:"🗄️"},
+ {w:"cafeteria",p:"名",c:2,m:"食堂",n:"みんなでご飯を食べる学校の食堂。",ex:"Let's eat lunch in the cafeteria.",exj:"食堂でお昼を食べよう。",ic:"🍽️"},
+ {w:"club",p:"名",c:2,m:"部活・クラブ",n:"同じ目的を持つ人が集まって活動する団体。",ex:"She's in the tennis club.",exj:"彼女はテニス部に入っている。",ic:"🎾"},
+ {w:"always",p:"副",c:3,m:"いつも(100%)",n:"頻度の目盛りで一番上。例外なく毎回起こること。",ex:"He always arrives early.",exj:"彼はいつも早く来る。",ic:"🔁"},
+ {w:"usually",p:"副",c:3,m:"たいてい(高頻度)",n:"always より少し低く、ほとんどの場合そうなること。",ex:"I usually walk to school.",exj:"私はたいてい歩いて学校に行く。",ic:"📆"},
+ {w:"sometimes",p:"副",c:3,m:"時々(中頻度)",n:"頻度の目盛りの真ん中。起こる時と起こらない時が半々ぐらい。",ex:"Sometimes we study together.",exj:"時々一緒に勉強する。",ic:"🌤️"},
+ {w:"rarely",p:"副",c:3,m:"めったに〜ない(低頻度)",n:"ほぼ起こらないが、never ほど断定しないやわらかい否定。",ex:"She rarely eats meat.",exj:"彼女はめったに肉を食べない。",ic:"🌧️"},
+ {w:"never",p:"副",c:3,m:"一度も〜ない(0%)",n:"頻度の目盛りで一番下。一度も起きていないという完全な否定。",ex:"I never saw that movie.",exj:"その映画は一度も見ていない。",ic:"🚫"},
+ {w:"already",p:"副",c:3,m:"もう(完了)",n:"予想より早く、もう終わっていることを示す。肯定文でよく使う。",ex:"I already finished my homework.",exj:"もう宿題を終わらせた。",ic:"✅"},
+ {w:"yet",p:"副",c:3,m:"まだ(未完了)",n:"否定文や疑問文で「まだ〜していない/した?」を表す。",ex:"I haven't finished it yet.",exj:"まだそれを終えていない。",ic:"⏳"},
+ {w:"still",p:"副",c:3,m:"まだ(継続中)",n:"ある状態がずっと続いていることを表す。",ex:"It's still raining.",exj:"まだ雨が降っている。",ic:"🌧️"},
+ {w:"soon",p:"副",c:3,m:"すぐに・もうすぐ",n:"そう遠くない未来に起こることを示す。",ex:"The bus will arrive soon.",exj:"バスはもうすぐ来る。",ic:"⏱️"},
+ {w:"recently",p:"副",c:3,m:"最近",n:"ついこの間から今にかけての期間を指す。",ex:"I started running recently.",exj:"最近走り始めた。",ic:"🆕"},
+ {w:"important",p:"形",c:4,m:"重要な",n:"軽く扱えない、注意を向けるべき価値があること。",ex:"This is an important point.",exj:"これは重要な点だ。",ic:"⭐"},
+ {w:"difficult",p:"形",c:4,m:"難しい",n:"やるのに力や工夫が必要なこと。hard よりやや硬い響き。",ex:"The question was difficult.",exj:"その問題は難しかった。",ic:"🧩"},
+ {w:"easy",p:"形",c:4,m:"簡単な",n:"少ない力や工夫でできること。",ex:"It's easy once you try.",exj:"やってみれば簡単だよ。",ic:"🪄"},
+ {w:"dangerous",p:"形",c:4,m:"危険な",n:"怪我や悪いことが起こる可能性があること。",ex:"Swimming here is dangerous.",exj:"ここで泳ぐのは危険だ。",ic:"⚠️"},
+ {w:"convenient",p:"形",c:4,m:"便利な",n:"手間がかからず、都合がいいというニュアンス。",ex:"This app is convenient.",exj:"このアプリは便利だ。",ic:"📱"},
+ {w:"comfortable",p:"形",c:4,m:"心地よい",n:"体や心にストレスがなく、リラックスできる状態。",ex:"This chair is comfortable.",exj:"この椅子は心地いい。",ic:"🛋️"},
+ {w:"strange",p:"形",c:4,m:"変な・奇妙な",n:"いつもと違って説明しづらい、引っかかる感じ。",ex:"That sound was strange.",exj:"その音は変だった。",ic:"❓"},
+ {w:"amazing",p:"形",c:4,m:"すごい",n:"予想を超えてすごいと感じる強い驚き。",ex:"The view was amazing.",exj:"その景色はすごかった。",ic:"✨"},
+ {w:"boring",p:"形",c:4,m:"退屈な",n:"物事の側が人をやる気にさせない性質。感じる側は bored。",ex:"The movie was boring.",exj:"その映画は退屈だった。",ic:"🥱"},
+ {w:"exciting",p:"形",c:4,m:"興奮させる",n:"周りをワクワクさせる側の性質。感じる側は excited。",ex:"It was an exciting game.",exj:"それはワクワクする試合だった。",ic:"🎉"},
+ {w:"however",p:"接続",c:5,m:"しかし",n:"but よりやや硬く、文頭やカンマの後に置いて逆接を示す。",ex:"I was tired. However, I kept studying.",exj:"疲れていた。しかし勉強を続けた。",ic:"🔀"},
+ {w:"because",p:"接続",c:5,m:"なぜなら・〜だから",n:"後ろに理由を続けて、前の内容の原因を説明する。",ex:"I stayed home because it rained.",exj:"雨が降ったので家にいた。",ic:"🧷"},
+ {w:"so",p:"接続",c:5,m:"だから・それで",n:"前の内容を受けて、その結果を示す軽い言葉。",ex:"It was late, so I ran.",exj:"遅かったので走った。",ic:"➡️"},
+ {w:"actually",p:"副",c:5,m:"実は",n:"相手の予想や前提と違う事実を示すときに使う。",ex:"Actually, I agree with you.",exj:"実は私もあなたに賛成だ。",ic:"💬"},
+ {w:"especially",p:"副",c:5,m:"特に",n:"いくつかある中で、一つを強調して取り出す。",ex:"I like fruit, especially apples.",exj:"果物が好き、特にりんごが。",ic:"🔎"},
+ {w:"finally",p:"副",c:5,m:"ついに・最後に",n:"長く待った末にようやく、という時間の重みを含む。",ex:"We finally arrived.",exj:"ついに到着した。",ic:"🏁"},
+ {w:"anyway",p:"副",c:5,m:"とにかく",n:"話を元の流れに戻したり、切り替えたりするときに使う。",ex:"Anyway, let's start.",exj:"とにかく始めよう。",ic:"🔄"},
+ {w:"besides",p:"副",c:5,m:"その上・それに",n:"理由をもう一つ付け加えるときに使う。",ex:"Besides, it's too late now.",exj:"それに、もう遅すぎる。",ic:"➕"},
+ {w:"though",p:"接続",c:5,m:"〜だけれども",n:"although より軽く、文末にも置ける柔らかい逆接。",ex:"It's small, though it's expensive.",exj:"小さいけど高い。",ic:"🪢"},
+ {w:"instead",p:"副",c:5,m:"その代わりに",n:"一つの行動をやめて、別の行動に置き換えることを示す。",ex:"Let's walk instead of driving.",exj:"運転する代わりに歩こう。",ic:"🔁"}
+];
+var SAMPLE_CATS = [
+ {name:"動作・基本動詞"}, {name:"気持ち・様子"}, {name:"学校・日常"},
+ {name:"時間・頻度"}, {name:"性質・形容詞"}, {name:"つなぎ言葉"}
+];
+SAMPLE_CATS.forEach(function(cat,i){
+  cat.idx = i;
+  cat.words = SAMPLE_WORDS.map(function(w,wi){return wi;}).filter(function(wi){return SAMPLE_WORDS[wi].c===i;});
+});
+
+/* ---------------- storage ---------------- */
+var STORE_KEY = "worddojo_progress_v1";
+var DECKS_KEY = "worddojo_custom_decks_v1";
+
+function loadStore(){
+  try{
+    var raw = localStorage.getItem(STORE_KEY);
+    if(!raw) return {known:{}, bestCombo:0};
+    var parsed = JSON.parse(raw);
+    if(!parsed.known) parsed.known = {};
+    if(typeof parsed.bestCombo !== "number") parsed.bestCombo = 0;
+    return parsed;
+  }catch(e){ return {known:{}, bestCombo:0}; }
+}
+function saveStore(s){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(s)); }catch(e){} }
+var store = loadStore();
+
+function loadDecks(){
+  try{
+    var raw = localStorage.getItem(DECKS_KEY);
+    if(!raw) return [];
+    var arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){ return []; }
+}
+function saveDecks(d){ try{ localStorage.setItem(DECKS_KEY, JSON.stringify(d)); }catch(e){} }
+var decks = loadDecks();
+
+function getDeck(id){ for(var i=0;i<decks.length;i++){ if(decks[i].id===id) return decks[i]; } return null; }
+function createDeck(name){
+  var d = {id:"d"+Date.now()+Math.floor(Math.random()*1000), name:name, cards:[]};
+  decks.push(d); saveDecks(decks); return d;
+}
+function renameDeck(id, name){ var d=getDeck(id); if(d){ d.name=name; saveDecks(decks); } }
+function deleteDeck(id){
+  decks = decks.filter(function(d){ return d.id!==id; });
+  saveDecks(decks);
+  delete store.known["custom_"+id];
+  saveStore(store);
+}
+function addCard(deckId, card){
+  var d = getDeck(deckId); if(!d) return null;
+  card.id = "c"+Date.now()+Math.floor(Math.random()*1000);
+  d.cards.push(card); saveDecks(decks); return card;
+}
+function updateCard(deckId, cardId, data){
+  var d = getDeck(deckId); if(!d) return;
+  for(var i=0;i<d.cards.length;i++){
+    if(d.cards[i].id===cardId){ d.cards[i].w=data.w; d.cards[i].m=data.m; d.cards[i].ex=data.ex; d.cards[i].exj=data.exj; d.cards[i].n=data.n; d.cards[i].cat=data.cat; break; }
+  }
+  saveDecks(decks);
+}
+function deckCategories(deck){
+  var seen = {}; var list = [];
+  deck.cards.forEach(function(c){
+    var cat = (c.cat||"").trim();
+    if(cat && !seen[cat]){ seen[cat]=true; list.push(cat); }
+  });
+  return list;
+}
+function deleteCard(deckId, cardId){
+  var d = getDeck(deckId); if(!d) return;
+  d.cards = d.cards.filter(function(c){ return c.id!==cardId; });
+  saveDecks(decks);
+  var sid = "custom_"+deckId;
+  var arr = store.known[sid];
+  if(arr){ store.known[sid] = arr.filter(function(k){ return k!==cardId; }); saveStore(store); }
+}
+
+function knownSet(sid){ return store.known[sid] || []; }
+function markKnown(sid, key){
+  var arr = store.known[sid] || [];
+  if(arr.indexOf(key)===-1){ arr.push(key); store.known[sid]=arr; saveStore(store); }
+}
+function unmarkKnown(sid, key){
+  var arr = store.known[sid] || [];
+  var i = arr.indexOf(key);
+  if(i!==-1){ arr.splice(i,1); store.known[sid]=arr; saveStore(store); }
+}
+
+/* ---------------- source abstraction (sample category or custom deck) ---------------- */
+function sourceId(source){ return source.type==="sample" ? ("sample_"+source.idx) : ("custom_"+source.deckId); }
+function sourceName(source){
+  if(source.type==="sample") return SAMPLE_CATS[source.idx].name;
+  var name = (getDeck(source.deckId)||{}).name || "単語帳";
+  if(source.cat!=null) name += " ・ " + (source.cat || "未分類");
+  return name;
+}
+function sourceCards(source){
+  if(source.type==="sample"){
+    return SAMPLE_CATS[source.idx].words.map(function(wi){ return {key:wi, data:SAMPLE_WORDS[wi]}; });
+  }
+  var d = getDeck(source.deckId);
+  if(!d) return [];
+  var cards = d.cards;
+  if(source.cat!=null){ cards = cards.filter(function(c){ return (c.cat||"")===source.cat; }); }
+  return cards.map(function(c){ return {key:c.id, data:c}; });
+}
+
+var app = document.getElementById("app");
+
+var state = {
+  screen:"home",
+  newDeckOpen:false,
+  editingDeckId:null, editingDeckRename:false, filterCat:null,
+  addCardOpen:false, editingCardId:null, pendingDeleteCardId:null, pendingDeleteDeck:false,
+  source:null, cardsSnapshot:[], order:[], pos:0, flipped:false, combo:0, sessionBest:0,
+  results:{ok:0,ng:0}, missed:[]
+};
+
+function shuffle(arr){
+  var a = arr.slice();
+  for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+function esc(s){
+  return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+/* ===================== HOME ===================== */
+function renderHome(){
+  var html = '<div class="home-head">' +
+    '<div class="brand"><h1>WordDojo</h1><span class="stamp">単語道場</span></div>' +
+    '<div class="tagline">自分の単語を登録して、めくって、スワイプで覚える。あなたの単語帳が主役の道場です。</div>' +
+    '</div>' +
+    '<button class="cta-primary" id="newDeckBtn">＋ 新しい単語帳を作る</button>' +
+    '<div id="newDeckFormWrap"></div>' +
+    '<div class="section-label"><span>マイ単語帳</span><span>'+decks.length+'</span></div>';
+
+  if(decks.length===0){
+    html += '<div class="empty-state">まだ単語帳がありません。上のボタンから作って、覚えたい単語をどんどん追加していきましょう。</div>';
+  } else {
+    html += '<div class="my-deck-list">';
+    decks.forEach(function(d){
+      var total = d.cards.length;
+      var got = knownSet("custom_"+d.id).filter(function(k){ return d.cards.some(function(c){return c.id===k;}); }).length;
+      var pct = total ? Math.round(got/total*100) : 0;
+      html += '<div class="my-deck-tile" data-deck="'+esc(d.id)+'">' +
+        '<div class="top-row"><span class="name">'+esc(d.name)+'</span><span class="count mono">'+total+' 語</span></div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%"></div></div>' +
+        '<div class="tile-btns">' +
+          '<button class="study" data-act="study" data-deck="'+esc(d.id)+'"'+(total===0?" disabled":"")+'>学習する</button>' +
+          '<button data-act="edit" data-deck="'+esc(d.id)+'">編集する</button>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '<div class="section-label"><span>付属のサンプル</span></div>' +
+    '<div class="sample-note">最初から入っている練習用の例です。自分の単語帳を作る前にお試しで触ってみてください。</div>' +
+    '<div class="sample-strip-wrap"><div class="sample-strip">';
+  SAMPLE_CATS.forEach(function(cat){
+    var total = cat.words.length;
+    var got = knownSet("sample_"+cat.idx).length;
+    html += '<button class="sample-pill" data-act="sample" data-idx="'+cat.idx+'">' +
+      '<span class="name">'+esc(cat.name)+'</span>' +
+      '<span class="count mono">'+got+' / '+total+'</span>' +
+    '</button>';
+  });
+  html += '</div></div>' +
+    '<div class="home-foot">最高コンボ <b class="mono" style="color:var(--gold)">'+(store.bestCombo||0)+'</b> ・ データはこの端末だけに保存されます。</div>';
+
+  app.innerHTML = html;
+
+  document.getElementById("newDeckBtn").addEventListener("click", function(){
+    state.newDeckOpen = !state.newDeckOpen;
+    renderNewDeckForm();
+  });
+  renderNewDeckForm();
+
+  app.querySelectorAll('[data-act="study"]').forEach(function(btn){
+    btn.addEventListener("click", function(e){
+      e.stopPropagation();
+      if(btn.disabled) return;
+      startStudy({type:"custom", deckId:btn.getAttribute("data-deck")});
+    });
+  });
+  app.querySelectorAll('[data-act="edit"]').forEach(function(btn){
+    btn.addEventListener("click", function(e){
+      e.stopPropagation();
+      openDeckEdit(btn.getAttribute("data-deck"));
+    });
+  });
+  app.querySelectorAll('[data-act="sample"]').forEach(function(btn){
+    btn.addEventListener("click", function(){
+      startStudy({type:"sample", idx:parseInt(btn.getAttribute("data-idx"),10)});
+    });
+  });
+}
+
+function renderNewDeckForm(){
+  var wrap = document.getElementById("newDeckFormWrap");
+  if(!wrap) return;
+  if(!state.newDeckOpen){ wrap.innerHTML = ""; return; }
+  wrap.innerHTML =
+    '<div class="new-deck-form">' +
+      '<input type="text" id="newDeckName" placeholder="単語帳の名前(例: 今週のテスト範囲)" maxlength="40">' +
+      '<button id="newDeckCreate">作成</button>' +
+      '<button class="cancel" id="newDeckCancel">やめる</button>' +
+    '</div>';
+  var input = document.getElementById("newDeckName");
+  input.focus();
+  function submit(){
+    var name = input.value.trim();
+    if(!name) { input.focus(); return; }
+    var d = createDeck(name);
+    state.newDeckOpen = false;
+    openDeckEdit(d.id);
+  }
+  document.getElementById("newDeckCreate").addEventListener("click", submit);
+  document.getElementById("newDeckCancel").addEventListener("click", function(){ state.newDeckOpen=false; renderNewDeckForm(); });
+  input.addEventListener("keydown", function(e){ if(e.key==="Enter") submit(); });
+}
+
+/* ===================== DECK EDIT ===================== */
+function openDeckEdit(deckId){
+  if(!getDeck(deckId)){ state.screen="home"; renderHome(); return; }
+  state.screen = "deckEdit";
+  state.editingDeckId = deckId;
+  state.editingDeckRename = false;
+  state.filterCat = null;
+  state.addCardOpen = false;
+  state.editingCardId = null;
+  state.pendingDeleteCardId = null;
+  state.pendingDeleteDeck = false;
+  renderDeckEdit();
+}
+
+function renderDeckEdit(){
+  var deck = getDeck(state.editingDeckId);
+  if(!deck){ state.screen="home"; renderHome(); return; }
+
+  var html = '<div class="deckedit-screen">' +
+    '<div class="deckedit-head">' +
+      '<button class="back-btn" id="backBtn">←</button>' +
+      '<div class="deckedit-name" id="deckNameWrap"></div>' +
+    '</div>';
+
+  var cats = deckCategories(deck);
+  var filterCards = deck.cards;
+  if(state.filterCat !== null){ filterCards = deck.cards.filter(function(c){ return (c.cat||"")===state.filterCat; }); }
+
+  if(filterCards.length>0){
+    html += '<button class="cta-primary study-cta" id="studyBtn">学習を始める('+filterCards.length+'語)</button>';
+  }
+
+  html += '<div class="section-label"><span>単語</span><span>'+deck.cards.length+'</span></div>';
+
+  if(cats.length>0){
+    html += '<div class="filter-chips">';
+    html += '<button class="chip'+(state.filterCat===null?' active':'')+'" data-act="filterAll">すべて('+deck.cards.length+')</button>';
+    cats.forEach(function(cat){
+      var n = deck.cards.filter(function(c){ return (c.cat||"")===cat; }).length;
+      html += '<button class="chip'+(state.filterCat===cat?' active':'')+'" data-act="filter" data-cat="'+esc(cat)+'">'+esc(cat)+'('+n+')</button>';
+    });
+    var uncatN = deck.cards.filter(function(c){ return !(c.cat||"").trim(); }).length;
+    if(uncatN>0){
+      html += '<button class="chip'+(state.filterCat===""?' active':'')+'" data-act="filter" data-cat="">未分類('+uncatN+')</button>';
+    }
+    html += '</div>';
+  }
+
+  function cardRowHtml(c){
+    if(state.pendingDeleteCardId===c.id){
+      return '<div class="confirm-row"><span>「'+esc(c.w)+'」を削除しますか?</span><div class="btns">' +
+        '<button class="danger" data-act="confirmDelCard" data-id="'+esc(c.id)+'">削除する</button>' +
+        '<button class="cancel" data-act="cancelDelCard">キャンセル</button>' +
+      '</div></div>';
+    }
+    var catTag = (c.cat||"").trim() ? '<span class="cat-tag">'+esc(c.cat)+'</span>' : '';
+    return '<div class="card-row">' +
+      '<div class="main" data-act="editCard" data-id="'+esc(c.id)+'"><span class="w">'+esc(c.w)+'</span><span class="m">'+esc(c.m)+'</span>'+catTag+'</div>' +
+      '<button class="del" data-act="delCard" data-id="'+esc(c.id)+'">✕</button>' +
+    '</div>';
+  }
+
+  if(deck.cards.length===0 && !state.addCardOpen){
+    html += '<div class="empty-state">まだ単語がありません。下のボタンから追加しましょう。</div>';
+  } else if(filterCards.length===0){
+    html += '<div class="empty-state">このカテゴリーの単語はまだありません。</div>';
+  } else {
+    html += '<div class="card-list">';
+    if(state.filterCat===null && cats.length>0){
+      cats.forEach(function(cat){
+        var rows = deck.cards.filter(function(c){ return (c.cat||"")===cat; });
+        if(rows.length===0) return;
+        html += '<div class="group-header">'+esc(cat)+'</div>';
+        rows.forEach(function(c){ html += cardRowHtml(c); });
+      });
+      var uncatRows = deck.cards.filter(function(c){ return !(c.cat||"").trim(); });
+      if(uncatRows.length>0){
+        html += '<div class="group-header">未分類</div>';
+        uncatRows.forEach(function(c){ html += cardRowHtml(c); });
+      }
+    } else {
+      filterCards.forEach(function(c){ html += cardRowHtml(c); });
+    }
+    html += '</div>';
+  }
+
+  if(!state.addCardOpen && !state.editingCardId){
+    html += '<button class="add-card-btn" id="addCardBtn">＋ 単語を追加</button>';
+  } else {
+    html += renderCardFormHtml();
+  }
+
+  html += '<div class="deck-danger">' +
+    (state.pendingDeleteDeck
+      ? '<div class="confirm-row"><span>「'+esc(deck.name)+'」を削除しますか?(元に戻せません)</span><div class="btns"><button class="danger" id="confirmDelDeck">削除する</button><button class="cancel" id="cancelDelDeck">キャンセル</button></div></div>'
+      : '<button id="delDeckBtn">この単語帳を削除</button>') +
+  '</div></div>';
+
+  app.innerHTML = html;
+  renderDeckNameHead(deck);
+  wireDeckEdit(deck);
+}
+
+function renderDeckNameHead(deck){
+  var wrap = document.getElementById("deckNameWrap");
+  if(!wrap) return;
+  if(state.editingDeckRename){
+    wrap.innerHTML = '<input type="text" id="deckRenameInput" maxlength="40" value="'+esc(deck.name)+'">';
+    var input = document.getElementById("deckRenameInput");
+    input.focus(); input.select();
+    function commit(){
+      var v = input.value.trim();
+      if(v) renameDeck(deck.id, v);
+      state.editingDeckRename = false;
+      renderDeckEdit();
+    }
+    input.addEventListener("blur", commit);
+    input.addEventListener("keydown", function(e){ if(e.key==="Enter") commit(); });
+  } else {
+    wrap.innerHTML = '<h2 id="deckNameLabel">'+esc(deck.name)+'</h2>';
+    document.getElementById("deckNameLabel").addEventListener("click", function(){
+      state.editingDeckRename = true; renderDeckNameHead(deck);
+    });
+  }
+}
+
+function renderCardFormHtml(){
+  var deck = getDeck(state.editingDeckId);
+  var editing = null;
+  if(state.editingCardId){
+    editing = deck.cards.find(function(c){ return c.id===state.editingCardId; });
+  }
+  var v = editing || {w:"",m:"",ex:"",exj:"",n:"",cat:state.addCardDefaultCat||""};
+  var cats = deckCategories(deck);
+  var datalist = '<datalist id="catSuggest">' + cats.map(function(c){ return '<option value="'+esc(c)+'">'; }).join("") + '</datalist>';
+  return '<div class="card-form" id="cardForm">' +
+    '<div class="field"><label>英単語・フレーズ(必須)</label><input type="text" id="cfWord" value="'+esc(v.w)+'" placeholder="例: consider"></div>' +
+    '<div class="field"><label>意味(必須)</label><input type="text" id="cfMeaning" value="'+esc(v.m)+'" placeholder="例: 〜を考慮する"></div>' +
+    '<div class="field"><label>カテゴリー(任意)</label><input type="text" id="cfCat" list="catSuggest" value="'+esc(v.cat||"")+'" placeholder="例: 動詞 / 第3章 など自由入力">'+datalist+'</div>' +
+    '<div class="field"><label>ひとこと解説(任意)</label><textarea id="cfNote" placeholder="ネイティブ感覚のニュアンスなど">'+esc(v.n)+'</textarea></div>' +
+    '<div class="field"><label>例文(任意)</label><input type="text" id="cfEx" value="'+esc(v.ex)+'" placeholder="例: Please consider my idea."></div>' +
+    '<div class="field"><label>例文の訳(任意)</label><input type="text" id="cfExj" value="'+esc(v.exj)+'" placeholder="例: 私の考えを検討してください。"></div>' +
+    '<div class="btn-row"><button class="save" id="cfSave">保存</button><button class="cancel" id="cfCancel">キャンセル</button></div>' +
+  '</div>';
+}
+
+function wireDeckEdit(deck){
+  document.getElementById("backBtn").addEventListener("click", function(){ state.screen="home"; renderHome(); });
+
+  var studyBtn = document.getElementById("studyBtn");
+  if(studyBtn) studyBtn.addEventListener("click", function(){
+    var src = {type:"custom", deckId:deck.id};
+    if(state.filterCat !== null) src.cat = state.filterCat;
+    startStudy(src);
+  });
+
+  app.querySelectorAll('[data-act="filterAll"]').forEach(function(el){
+    el.addEventListener("click", function(){ state.filterCat = null; renderDeckEdit(); });
+  });
+  app.querySelectorAll('[data-act="filter"]').forEach(function(el){
+    el.addEventListener("click", function(){ state.filterCat = el.getAttribute("data-cat"); renderDeckEdit(); });
+  });
+
+  app.querySelectorAll('[data-act="editCard"]').forEach(function(el){
+    el.addEventListener("click", function(){
+      state.editingCardId = el.getAttribute("data-id");
+      state.addCardOpen = false;
+      state.pendingDeleteCardId = null;
+      renderDeckEdit();
+    });
+  });
+  app.querySelectorAll('[data-act="delCard"]').forEach(function(el){
+    el.addEventListener("click", function(){
+      state.pendingDeleteCardId = el.getAttribute("data-id");
+      renderDeckEdit();
+    });
+  });
+  var confirmDel = document.querySelector('[data-act="confirmDelCard"]');
+  if(confirmDel) confirmDel.addEventListener("click", function(){
+    deleteCard(deck.id, confirmDel.getAttribute("data-id"));
+    state.pendingDeleteCardId = null;
+    renderDeckEdit();
+  });
+  var cancelDel = document.querySelector('[data-act="cancelDelCard"]');
+  if(cancelDel) cancelDel.addEventListener("click", function(){ state.pendingDeleteCardId = null; renderDeckEdit(); });
+
+  var addBtn = document.getElementById("addCardBtn");
+  if(addBtn) addBtn.addEventListener("click", function(){
+    state.addCardOpen = true; state.editingCardId = null;
+    state.addCardDefaultCat = (state.filterCat && state.filterCat!=="") ? state.filterCat : "";
+    renderDeckEdit();
+    setTimeout(function(){ var el=document.getElementById("cfWord"); if(el) el.focus(); }, 0);
+  });
+
+  var cfSave = document.getElementById("cfSave");
+  if(cfSave) cfSave.addEventListener("click", function(){
+    var w = document.getElementById("cfWord").value.trim();
+    var m = document.getElementById("cfMeaning").value.trim();
+    if(!w || !m){
+      if(!w) document.getElementById("cfWord").focus(); else document.getElementById("cfMeaning").focus();
+      return;
+    }
+    var data = {
+      w:w, m:m,
+      cat:document.getElementById("cfCat").value.trim(),
+      n:document.getElementById("cfNote").value.trim(),
+      ex:document.getElementById("cfEx").value.trim(),
+      exj:document.getElementById("cfExj").value.trim()
+    };
+    if(state.editingCardId){ updateCard(deck.id, state.editingCardId, data); }
+    else { addCard(deck.id, data); }
+    state.addCardOpen = false; state.editingCardId = null;
+    renderDeckEdit();
+  });
+  var cfCancel = document.getElementById("cfCancel");
+  if(cfCancel) cfCancel.addEventListener("click", function(){
+    state.addCardOpen = false; state.editingCardId = null; renderDeckEdit();
+  });
+
+  var delDeckBtn = document.getElementById("delDeckBtn");
+  if(delDeckBtn) delDeckBtn.addEventListener("click", function(){ state.pendingDeleteDeck = true; renderDeckEdit(); });
+  var confirmDelDeck = document.getElementById("confirmDelDeck");
+  if(confirmDelDeck) confirmDelDeck.addEventListener("click", function(){
+    deleteDeck(deck.id); state.screen="home"; renderHome();
+  });
+  var cancelDelDeck = document.getElementById("cancelDelDeck");
+  if(cancelDelDeck) cancelDelDeck.addEventListener("click", function(){ state.pendingDeleteDeck=false; renderDeckEdit(); });
+}
+
+/* ===================== STUDY ===================== */
+function startStudy(source){
+  var cards = sourceCards(source);
+  if(cards.length===0){ return; }
+  state.screen = "study";
+  state.source = source;
+  state.cardsSnapshot = cards;
+  state.order = shuffle(cards.map(function(c,i){ return i; }));
+  state.pos = 0; state.flipped = false; state.combo = 0; state.sessionBest = 0;
+  state.results = {ok:0, ng:0}; state.missed = [];
+  renderStudy();
+}
+
+function currentCard(){ return state.cardsSnapshot[state.order[state.pos]]; }
+
+function renderStudy(){
+  if(state.pos >= state.order.length){ renderSummary(); return; }
+  var total = state.order.length;
+  var c = currentCard();
+  var w = c.data;
+  var pos = w.p || "";
+  var ic = w.ic || "📝";
+  var html = '<div class="study-screen">' +
+    '<div class="study-top">' +
+      '<button class="back-btn" id="backBtn">←</button>' +
+      '<div class="study-title"><div class="cat-name">'+esc(sourceName(state.source))+'</div><div class="cat-pos mono">'+(state.pos+1)+' / '+total+'</div></div>' +
+      '<div class="combo-pill" id="comboPill"><span class="flame">🔥</span><span id="comboNum">'+state.combo+'</span></div>' +
+    '</div>' +
+    '<div class="progress-track"><div class="progress-fill" style="width:'+Math.round(state.pos/total*100)+'%"></div></div>' +
+    '<div class="stage">' +
+      '<div class="card-wrap" id="cardWrap">' +
+        '<div class="swipe-flag ok" id="flagOk">覚えた</div>' +
+        '<div class="swipe-flag ng" id="flagNg">まだ</div>' +
+        '<div class="card" id="card">' +
+          '<div class="face face-front">' +
+            '<span class="icon">'+ic+'</span>' +
+            (pos ? '<span class="pos-tag">'+esc(pos)+'</span>' : '') +
+            '<span class="eng">'+esc(w.w)+'</span>' +
+            '<span class="hint">タップして意味を見る</span>' +
+          '</div>' +
+          '<div class="face face-back">' +
+            '<span class="eng-small mono">'+esc(w.w)+(pos?' ・ '+esc(pos):'')+'</span>' +
+            '<span class="meaning">'+esc(w.m)+'</span>' +
+            (w.n ? '<span class="nuance">'+esc(w.n)+'</span>' : '') +
+            (w.ex ? '<span class="ex-en">"'+esc(w.ex)+'"</span>' : '') +
+            (w.exj ? '<span class="ex-ja">'+esc(w.exj)+'</span>' : '') +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="hint-text" id="hintText">タップでカードをめくる</div>' +
+    '</div>' +
+    '<div class="action-row" id="actionRow">' +
+      '<button class="act-btn ng" id="btnNg">まだ<span class="sub">もう一度</span></button>' +
+      '<button class="act-btn ok" id="btnOk">覚えた!<span class="sub">次へ</span></button>' +
+    '</div>' +
+  '</div>';
+  app.innerHTML = html;
+  wireStudy();
+}
+
+function wireStudy(){
+  document.getElementById("backBtn").addEventListener("click", function(){ goBackFromStudy(); });
+  var card = document.getElementById("card");
+  var wrap = document.getElementById("cardWrap");
+  var actionRow = document.getElementById("actionRow");
+  var hintText = document.getElementById("hintText");
+  var flagOk = document.getElementById("flagOk");
+  var flagNg = document.getElementById("flagNg");
+
+  var dragging=false, startX=0, startY=0, dx=0, moved=false;
+
+  function flip(){
+    if(state.flipped) return;
+    state.flipped = true;
+    card.classList.add("flipped");
+    actionRow.classList.add("show");
+    hintText.textContent = "分かったら右へ、まだなら左へスワイプ(またはボタン)";
+  }
+  function resetDrag(){
+    card.style.transform = "";
+    flagOk.style.opacity = 0;
+    flagNg.style.opacity = 0;
+  }
+  function onDown(e){
+    var pt = e.touches ? e.touches[0] : e;
+    dragging = true; moved=false; startX = pt.clientX; startY = pt.clientY; dx=0;
+  }
+  function onMove(e){
+    if(!dragging) return;
+    var pt = e.touches ? e.touches[0] : e;
+    dx = pt.clientX - startX;
+    var dy = pt.clientY - startY;
+    if(Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
+    if(state.flipped && moved){
+      card.style.transform = "translateX("+dx+"px) rotate("+(dx/14)+"deg)";
+      flagOk.style.opacity = Math.max(0, Math.min(1, dx/70));
+      flagNg.style.opacity = Math.max(0, Math.min(1, -dx/70));
+    }
+  }
+  function onUp(){
+    if(!dragging) return;
+    dragging = false;
+    if(!state.flipped){
+      if(!moved) flip();
+      return;
+    }
+    if(Math.abs(dx) > 80){ resolveCard(dx > 0); }
+    else { resetDrag(); }
+  }
+
+  wrap.addEventListener("mousedown", onDown);
+  window.addEventListener("mousemove", onMove);
+  window.addEventListener("mouseup", onUp);
+  wrap.addEventListener("touchstart", onDown, {passive:true});
+  wrap.addEventListener("touchmove", onMove, {passive:true});
+  wrap.addEventListener("touchend", onUp);
+
+  document.getElementById("btnOk").addEventListener("click", function(){ resolveCard(true); });
+  document.getElementById("btnNg").addEventListener("click", function(){ resolveCard(false); });
+}
+
+function goBackFromStudy(){
+  if(state.source && state.source.type==="custom"){ openDeckEdit(state.source.deckId); }
+  else { state.screen="home"; renderHome(); }
+}
+
+function resolveCard(ok){
+  var sid = sourceId(state.source);
+  var key = currentCard().key;
+  var posInOrder = state.order[state.pos];
+  if(ok){
+    state.combo += 1;
+    state.sessionBest = Math.max(state.sessionBest, state.combo);
+    state.results.ok += 1;
+    markKnown(sid, key);
+    if(state.combo > (store.bestCombo||0)){ store.bestCombo = state.combo; saveStore(store); }
+    popCombo();
+  } else {
+    state.combo = 0;
+    state.results.ng += 1;
+    state.missed.push(posInOrder);
+    unmarkKnown(sid, key);
+    var num = document.getElementById("comboNum");
+    if(num) num.textContent = state.combo;
+  }
+  state.pos += 1;
+  state.flipped = false;
+  setTimeout(renderStudy, 140);
+}
+
+function popCombo(){
+  var pill = document.getElementById("comboPill");
+  var num = document.getElementById("comboNum");
+  if(num) num.textContent = state.combo;
+  if(pill){ pill.classList.add("pop"); setTimeout(function(){ pill.classList.remove("pop"); }, 180); }
+}
+
+function renderSummary(){
+  var total = state.order.length;
+  var badge = state.results.ok === total ? "🏆" : (state.sessionBest >= 5 ? "🔥" : "🎴");
+  var isCustom = state.source && state.source.type==="custom";
+  var html = '<div class="summary">' +
+    '<span class="badge">'+badge+'</span>' +
+    '<h2>'+esc(sourceName(state.source))+' クリア</h2>' +
+    '<div class="stats">' +
+      '<div class="stat"><b class="mono">'+state.results.ok+'/'+total+'</b><span>覚えた</span></div>' +
+      '<div class="stat"><b class="mono" style="color:var(--gold)">'+state.sessionBest+'</b><span>最高コンボ</span></div>' +
+    '</div>' +
+    '<div class="summary-btns">' +
+      (state.missed.length ? '<button class="primary" id="retryMissed">まだのカードだけもう一度('+state.missed.length+')</button>' : '') +
+      '<button id="retryAll">同じ束を全部もう一度</button>' +
+      (isCustom ? '<button id="toEdit">単語を編集する</button>' : '') +
+      '<button id="toHome">道場に戻る</button>' +
+    '</div>' +
+  '</div>';
+  app.innerHTML = html;
+  var retryMissed = document.getElementById("retryMissed");
+  if(retryMissed){
+    retryMissed.addEventListener("click", function(){
+      state.order = shuffle(state.missed.slice());
+      state.pos=0; state.flipped=false; state.combo=0; state.sessionBest=0;
+      state.results={ok:0,ng:0}; state.missed=[];
+      renderStudy();
+    });
+  }
+  document.getElementById("retryAll").addEventListener("click", function(){ startStudy(state.source); });
+  var toEdit = document.getElementById("toEdit");
+  if(toEdit) toEdit.addEventListener("click", function(){ openDeckEdit(state.source.deckId); });
+  document.getElementById("toHome").addEventListener("click", function(){ state.screen="home"; renderHome(); });
+}
+
+/* ===================== boot ===================== */
+function boot(data){
+  if(data && data.store) store = data.store;
+  if(data && data.decks) decks = data.decks;
+  renderHome();
+}
+if(window.claude && window.claude.hot){
+  window.claude.hot.snapshot(function(){ return {store:store, decks:decks}; });
+  window.claude.hot.ready ? window.claude.hot.ready(boot) : boot(window.claude.hot.data || {});
+} else {
+  boot({});
+}
+
+})();
+</script>
+
+</body></html>

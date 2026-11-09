@@ -1,0 +1,928 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>文法道場</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout concept: single-page quiz app — a phone-width card that cross-fades
+   through screens (series -> menu -> rule -> quiz -> result), centered in a
+   max-width column so it reads the same on a desktop share-link or a phone. */
+:root{
+  --bg:#FBF5EC;
+  --surface:#FFFFFF;
+  --surface-2:#FFF3E3;
+  --ink:#262A3D;
+  --ink-soft:#6E7388;
+  --primary:#2FA79D;
+  --primary-ink:#FFFFFF;
+  --accent:#FF6B6B;
+  --accent-ink:#FFFFFF;
+  --correct:#07A97E;
+  --incorrect:#E0405E;
+  --shadow:rgba(38,42,61,.12);
+  --font-display:'Zen Maru Gothic','Hiragino Maru Gothic ProN','Yu Gothic',sans-serif;
+  --font-body:'Noto Sans JP','Hiragino Sans','Yu Gothic',sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14171F;
+    --surface:#1D212C;
+    --surface-2:#262B38;
+    --ink:#F1EEE5;
+    --ink-soft:#9BA0B5;
+    --primary:#4FD1C6;
+    --primary-ink:#0B1413;
+    --accent:#FF8787;
+    --accent-ink:#2B0B0E;
+    --correct:#38DDA9;
+    --incorrect:#FF7088;
+    --shadow:rgba(0,0,0,.4);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14171F;
+  --surface:#1D212C;
+  --surface-2:#262B38;
+  --ink:#F1EEE5;
+  --ink-soft:#9BA0B5;
+  --primary:#4FD1C6;
+  --primary-ink:#0B1413;
+  --accent:#FF8787;
+  --accent-ink:#2B0B0E;
+  --correct:#38DDA9;
+  --incorrect:#FF7088;
+  --shadow:rgba(0,0,0,.4);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+  padding-block:20px;
+  display:flex;
+  justify-content:center;
+}
+.app{
+  width:100%;
+  max-width:460px;
+  display:flex;
+  flex-direction:column;
+  min-height:calc(100% - 0px);
+}
+h1,h2,h3{font-family:var(--font-display); margin:0; text-wrap:balance;}
+button{font-family:var(--font-display);}
+
+[hidden]{display:none!important;}
+
+/* ---------- top bar ---------- */
+.topbar{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:40px;
+  margin-bottom:10px;
+}
+.backbtn{
+  appearance:none;
+  border:none;
+  background:var(--surface);
+  color:var(--ink-soft);
+  font-size:13px;
+  font-weight:700;
+  padding:8px 14px;
+  border-radius:999px;
+  box-shadow:0 2px 6px var(--shadow);
+  cursor:pointer;
+}
+.backbtn:hover{color:var(--ink);}
+.brand{
+  margin-left:auto;
+  font-size:12px;
+  letter-spacing:.08em;
+  color:var(--ink-soft);
+  font-weight:700;
+}
+
+/* ---------- screens ---------- */
+.screen{display:flex; flex-direction:column; gap:16px; flex:1;}
+
+/* home / series select */
+.hero{
+  text-align:center;
+  padding:28px 8px 6px;
+}
+.hero .kicker{
+  font-size:13px; font-weight:700; letter-spacing:.14em; color:var(--primary);
+}
+.hero h1{font-size:30px; margin-top:6px; line-height:1.3;}
+.hero p{color:var(--ink-soft); font-size:14px; margin-top:8px;}
+
+.mascot{
+  width:84px; height:84px; margin:10px auto 0; position:relative;
+}
+.mascot .body{
+  width:100%; height:100%; border-radius:46% 46% 50% 50%/56% 56% 44% 44%;
+  background:var(--primary);
+  box-shadow:inset 0 -10px 0 rgba(0,0,0,.08);
+  transition:transform .25s ease, background .2s ease;
+}
+.mascot.happy .body{background:var(--correct);}
+.mascot.sad .body{background:var(--incorrect);}
+.mascot.bounce .body{animation:bounce .4s ease;}
+@keyframes bounce{0%{transform:scale(1)}40%{transform:scale(1.18,.86)}70%{transform:scale(.94,1.08)}100%{transform:scale(1)}}
+.mascot .eye{
+  position:absolute; top:38%; width:9px; height:9px; border-radius:50%; background:var(--surface);
+}
+.mascot .eye.l{left:30%;} .mascot .eye.r{right:30%;}
+.mascot .cheek{
+  position:absolute; top:52%; width:12px; height:7px; border-radius:50%;
+  background:rgba(255,255,255,.35);
+}
+.mascot .cheek.l{left:18%;} .mascot .cheek.r{right:18%;}
+
+.seriescards{display:flex; flex-direction:column; gap:14px; margin-top:8px;}
+.seriescard{
+  appearance:none; border:none; cursor:pointer; text-align:left;
+  border-radius:20px; padding:20px 22px; color:var(--primary-ink);
+  background:var(--primary);
+  box-shadow:0 10px 24px var(--shadow);
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.seriescard.alt{background:var(--accent); color:var(--accent-ink);}
+.seriescard .t{font-size:19px; font-weight:700;}
+.seriescard .s{font-size:12px; opacity:.85; margin-top:4px; font-family:var(--font-body); font-weight:400;}
+.seriescard .arrow{font-size:22px;}
+
+/* unit menu */
+.menutitle{text-align:center;}
+.menutitle h2{font-size:21px;}
+.menutitle p{color:var(--ink-soft); font-size:13px; margin:6px 0 0;}
+.unitlist{display:flex; flex-direction:column; gap:10px; overflow-y:auto; padding-bottom:8px;}
+.unitbtn{
+  appearance:none; border:none; cursor:pointer; text-align:left;
+  background:var(--surface); color:var(--ink); border-radius:16px;
+  padding:14px 16px; box-shadow:0 3px 10px var(--shadow);
+  display:flex; align-items:center; gap:10px; font-family:var(--font-body);
+}
+.unitbtn .num{
+  flex:none; width:28px; height:28px; border-radius:50%; background:var(--surface-2);
+  color:var(--ink-soft); font-size:12px; font-weight:700; display:flex; align-items:center; justify-content:center;
+}
+.unitbtn.done .num{background:var(--correct); color:#fff;}
+.unitbtn .ttl{font-size:14px; line-height:1.4;}
+
+/* rule screen */
+.card{
+  background:var(--surface); border-radius:18px; padding:18px 20px;
+  box-shadow:0 6px 18px var(--shadow);
+}
+.ruletitle{text-align:center; font-size:21px; padding:4px 6px;}
+.card.rule{font-size:15px; line-height:1.8; white-space:pre-line;}
+.card.example{font-size:14px; line-height:1.8; white-space:pre-line; color:var(--ink-soft); font-family:ui-monospace,Menlo,monospace;}
+.label{font-size:12px; font-weight:700; color:var(--primary); letter-spacing:.06em; margin-bottom:6px; display:block;}
+.primarybtn{
+  appearance:none; border:none; cursor:pointer; width:100%;
+  background:var(--primary); color:var(--primary-ink); font-size:16px; font-weight:700;
+  padding:14px; border-radius:16px; box-shadow:0 8px 18px var(--shadow);
+}
+.ghostbtn{
+  appearance:none; border:none; cursor:pointer; width:100%;
+  background:var(--surface); color:var(--ink); font-size:14px; font-weight:700;
+  padding:12px; border-radius:16px; box-shadow:0 3px 10px var(--shadow);
+}
+
+/* diagram */
+.diagram{
+  background:var(--surface-2); border-radius:16px; padding:16px 10px 12px;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+}
+.diagram .row{display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:center;}
+.diagram .box{
+  background:var(--surface); border-radius:12px; padding:8px 12px; font-size:12.5px; font-weight:700;
+  box-shadow:0 2px 6px var(--shadow); white-space:nowrap;
+}
+.diagram .box.accent{background:var(--primary); color:var(--primary-ink);}
+.diagram .arrow{color:var(--ink-soft); font-size:15px;}
+.diagram .cap{font-size:11.5px; color:var(--ink-soft); text-align:center; line-height:1.5; padding:0 4px;}
+
+/* quiz */
+.quizhead{text-align:center; font-size:13px; color:var(--ink-soft); font-weight:700;}
+.progressbar{height:6px; border-radius:4px; background:var(--surface-2); overflow:hidden;}
+.progressbar i{display:block; height:100%; background:var(--primary); transition:width .25s ease;}
+.combo{
+  align-self:center; font-size:12px; font-weight:700; color:var(--accent);
+  opacity:0; transform:translateY(4px); transition:opacity .2s ease, transform .2s ease;
+}
+.combo.show{opacity:1; transform:translateY(0);}
+.prompt{font-size:16px; line-height:1.7; text-align:center;}
+.choices{display:flex; flex-direction:column; gap:10px;}
+.choice{
+  appearance:none; border:none; cursor:pointer; text-align:left; width:100%;
+  background:var(--surface); color:var(--ink); font-size:14.5px; font-family:var(--font-body);
+  padding:14px 16px; border-radius:14px; box-shadow:0 3px 10px var(--shadow);
+  transition:background .15s ease, color .15s ease;
+}
+.choice.correct{background:var(--correct); color:#fff; font-weight:700;}
+.choice.incorrect{background:var(--incorrect); color:#fff; font-weight:700;}
+.choice:disabled{cursor:default;}
+.feedback{min-height:20px; text-align:center; font-size:13.5px; font-weight:700; line-height:1.6;}
+.feedback.correct{color:var(--correct);}
+.feedback.incorrect{color:var(--incorrect);}
+
+/* result */
+.resultwrap{display:flex; flex-direction:column; align-items:center; gap:18px; padding-top:10px;}
+.ring{
+  width:140px; height:140px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:conic-gradient(var(--primary) calc(var(--pct,0)*1%), var(--surface-2) 0);
+}
+.ring .inner{
+  width:112px; height:112px; border-radius:50%; background:var(--surface);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  box-shadow:inset 0 2px 6px var(--shadow);
+}
+.ring .inner b{font-size:26px; font-family:var(--font-display);}
+.ring .inner span{font-size:11px; color:var(--ink-soft);}
+.resulttitle{text-align:center; font-size:16px; font-weight:700;}
+.resultmsg{text-align:center; font-size:13px; color:var(--ink-soft);}
+.btnstack{display:flex; flex-direction:column; gap:10px; width:100%;}
+</style>
+
+<div class="app" id="app"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- content: 中学英文法 (17 units) ---------------- */
+const JUNIOR = [
+{title:"1. 英文の設計図：語順がすべて",
+ rule:`英語は「誰が→する→何を→いつ」の順番が固定された言語。
+並べる位置そのものが役割を表す。文には主語と動詞が必ず1つずつ必要。`,
+ example:`「私は放課後にテニスをする」
+→ I play tennis after school.
+(誰が→する→何を→いつ)`,
+ diagram:{boxes:[["だれが(S)",0],["する(V)",1],["なにを(O)",0]],cap:"英語は「だれが→する→なにを」の順で並べる。並べる位置そのものが役割"},
+ questions:[
+  {q:"「私は放課後にテニスをする」正しい英文は?",c:["I play tennis after school.","I tennis play after school.","After school I tennis play."],a:0,e:"誰が(I)→する(play)→何を(tennis)→いつ(after school)の順。"},
+  {q:"英語の文に必ず必要な2つの要素は?",c:["主語と動詞","主語と目的語","動詞と目的語"],a:0,e:"日本語は主語を省略できるが、英語は主語と動詞が必ず1つずつ必要。"},
+  {q:"動詞を置く位置として正しいのは?",c:["主語のすぐ後ろ","文の最後","目的語の後ろ"],a:0,e:"英語は主語のすぐ後ろに動詞が来る。"},
+  {q:"誤りの文はどれ?",c:["I play soccer.","I soccer play.","I like music."],a:1,e:"日本語の順番のまま並べたミス。動詞を目的語の後に置いてはいけない。"},
+ ]},
+{title:"2. be動詞と一般動詞",
+ rule:`動詞には2種類しかない。be動詞は「＝(イコール)」、一般動詞は「動き・状態」。
+どちらか判断できれば疑問文・否定文も自動的に決まる。`,
+ example:`I am a student.(私＝生徒)
+I play soccer.(私はサッカーをする)
+否定:I don't play soccer. 疑問:Does Ken play soccer?`,
+ questions:[
+  {q:"正しい文はどれ?",c:["I am a student.","I a student.","I is a student."],a:0,e:"I に対応するbe動詞はam。"},
+  {q:"Ken ___ soccer every day.",c:["play","plays","playing"],a:1,e:"主語Kenは三単現(自分でも相手でもない1人)で現在の習慣なのでsをつける。"},
+  {q:"___ he play tennis?",c:["Do","Does","Is"],a:1,e:"主語heが三単現で一般動詞の疑問文なのでDoesを使う。"},
+  {q:"誤りの文はどれ?",c:["I am not a teacher.","I don't play soccer.","I am play soccer."],a:2,e:"be動詞と一般動詞を同時に使ってしまっている(✕ am play)。"},
+ ]},
+{title:"3. 時制：動詞の形で「いつ」を表す",
+ rule:`動詞の形を変えて「いつのことか」を表す。
+判断ポイントは「過去・今・未来のどこか」と「1回の点か、途中か」。`,
+ example:`I play tennis every day.(現在形)
+I am playing tennis now.(現在進行形)
+I played tennis yesterday.(過去形)`,
+ questions:[
+  {q:"I ___ tennis every day.",c:["play","am playing","played"],a:0,e:"every dayは習慣を表すので現在形。"},
+  {q:"Look! He ___ now.",c:["swims","is swimming","swam"],a:1,e:"nowは「今まさに」なので現在進行形。"},
+  {q:"I ___ my homework yesterday.",c:["do","did","will do"],a:1,e:"yesterdayは過去を表す語なので過去形。"},
+  {q:"___ you play tennis yesterday?",c:["Do","Did","Does"],a:1,e:"過去形の疑問文は一般動詞ならDidを使う。"},
+ ]},
+{title:"4. 助動詞：動詞に「気持ち」を足す",
+ rule:`助動詞は動詞の前に置いて話し手の気持ちや判断を足す言葉。
+形のルールは1つだけ:助動詞＋動詞の原形。`,
+ example:`He can swim.(できる)
+You should study.(すべきだ)
+You must not run here.(してはいけない)`,
+ questions:[
+  {q:"You ___ study harder.(すべきだ)",c:["can","should","may"],a:1,e:"「すべきだ」はshould。"},
+  {q:"He ___ swim very fast.(できる)",c:["can","must","should"],a:0,e:"「できる」はcan。"},
+  {q:"正しい文はどれ?",c:["He can swims.","He can swim.","He can to swim."],a:1,e:"助動詞の後ろは動詞の原形。sもtoもつけない。"},
+  {q:"You ___ run here.(してはいけない=禁止)",c:["don't have to","must not","may not"],a:1,e:"禁止はmust not。don't have toは「しなくてもよい」で意味が違う。"},
+ ]},
+{title:"5. 不定詞と動名詞",
+ rule:`1つの文に動詞は1つ。動詞をもう一つ使いたいときは to や -ing をつけて
+名詞・形容詞・副詞に変身させる。to=これから、-ingは今している感覚。`,
+ example:`I want to swim.(to~だけ)
+I enjoy swimming.(-ingだけ)
+Thank you for helping me.(前置詞の後は必ず-ing)`,
+ questions:[
+  {q:"I enjoy ___ music.",c:["to listen","listening","listen"],a:1,e:"enjoyの後ろは-ingだけ。"},
+  {q:"I want ___.",c:["to swim","swimming","swim"],a:0,e:"wantの後ろはto~だけ。"},
+  {q:"Thank you for ___ me.",c:["help","to help","helping"],a:2,e:"前置詞forの後ろは必ず-ing。"},
+  {q:"I'm happy ___ you.(あなたに会えて)",c:["to see","seeing","see"],a:0,e:"感情の言葉の後のto~は「~して」という副詞的用法。"},
+ ]},
+{title:"6. 比較：「同じ」「より上」「いちばん」",
+ rule:`比べるときは形容詞の形を変えるだけ。
+何人(いくつ)比べているかで as~as / -er than / the -est を使い分ける。`,
+ example:`Ken is as tall as Tom.(同じくらい)
+Ken is taller than Tom.(より上)
+Ken is the tallest in his class.(いちばん)`,
+ questions:[
+  {q:"Ken is ___ than Tom.(背が高い)",c:["tall","taller","tallest"],a:1,e:"2つを比べるときは-er than。"},
+  {q:"Ken is ___ in his class.",c:["tall","taller","the tallest"],a:2,e:"3人以上の中でいちばんはthe -est。"},
+  {q:"This question is ___ than that one.(difficult)",c:["difficulter","more difficult","most difficult"],a:1,e:"difficultのような長い単語はmore/mostを使う。"},
+  {q:"Ken is ___ Tom.(同じくらい背が高い)",c:["as tall as","taller than","the tallest of"],a:0,e:"「同じくらい」はas~as。"},
+ ]},
+{title:"7. 受け身：「される側」を主役にする",
+ rule:`受け身は新しい文ではなく「される側」を主語にして並べ替えた文。
+形は 主語＋be動詞＋過去分詞(+by~)。`,
+ example:`English is spoken in many countries.
+This temple was built 500 years ago.
+by以外:be covered with / be interested in / be made of`,
+ diagram:{boxes:[["A letter(新S)",1],["was written",0],["by him",0]],cap:"される側を主語に → be動詞+過去分詞。誰がしたかは by で足す"},
+ questions:[
+  {q:"English ___ in many countries.",c:["speaks","is spoken","spoke"],a:1,e:"「される側」が主語なのでbe動詞+過去分詞。"},
+  {q:"This temple ___ 500 years ago.",c:["built","was built","is built"],a:1,e:"過去のことなのでwas built。"},
+  {q:"正しい文はどれ?",c:["This letter written by Ken.","This letter was written by Ken.","This letter is write by Ken."],a:1,e:"be動詞を忘れたり過去分詞を使わなかったりするとミスになる。"},
+  {q:"This mountain ___ snow.(覆われている)",c:["is covered with","is covered of","is covered by"],a:0,e:"be covered withは「一緒にある」感覚でwithを使う。"},
+ ]},
+{title:"8. 現在完了：過去と今をつなぐ",
+ rule:`have+過去分詞は過去のできごとを「今」と結びつけて話す形。
+継続・経験・完了の3つの意味がある。`,
+ example:`I have lived here for 5 years.(継続)
+I have visited Kyoto twice.(経験)
+I have just finished my homework.(完了)`,
+ diagram:{boxes:[["過去の一コマ(今とは切れている)",0],["今につながる状態",1]],cap:"現在完了は「今」に矢印が伸びている感覚"},
+ questions:[
+  {q:"I ___ in Tokyo for five years.(ずっと住んでいる)",c:["live","lived","have lived"],a:2,e:"forで示す継続は現在完了。"},
+  {q:"I ___ Kyoto twice.",c:["visit","visited","have visited"],a:2,e:"twiceは経験を表す現在完了の目印。"},
+  {q:"誤りの文はどれ?",c:["I have lost my key.","I have visited Kyoto last year.","I have just finished my homework."],a:1,e:"last yearは過去の1点を指す言葉なので現在完了と一緒に使えない。"},
+  {q:"I ___ to Osaka. He isn't here now.(行ってしまった)",c:["have been","have gone","went"],a:1,e:"have been to=行ったことがある(経験)。have gone to=行ってしまって今ここにいない。"},
+ ]},
+{title:"9. 文型：動詞の後ろに何が並ぶか",
+ rule:`動詞の後ろに並ぶ言葉の数と関係で意味が決まる。
+見分け方は「2つの間に＝が成り立つか」。＝ならC(第5文型)、別物ならO+O(第4文型)。`,
+ example:`She gave me a book.(me≠a book→SVOO)
+The news made me happy.(me=happy→SVOC)`,
+ diagram:{boxes:[["He(S)",0],["a teacher(C)",1]],cap:"後ろの名詞が主語と同じならC、別物ならO+Oが並ぶ(第4文型)"},
+ questions:[
+  {q:"She gave me a book. の文型は?",c:["第3文型(SVO)","第4文型(SVOO)","第5文型(SVOC)"],a:1,e:"me≠a bookで別物なのでO+Oが並ぶ第4文型。"},
+  {q:"The news made me happy. の文型は?",c:["第3文型(SVO)","第4文型(SVOO)","第5文型(SVOC)"],a:2,e:"me=happyの状態を表すので第5文型。"},
+  {q:"She gave a book ___ me.(ものを先に言う場合)",c:["to","for","of"],a:0,e:"give, show, tell, teach, send, lendは「相手」が必須なのでto。"},
+  {q:"We call ___.(彼をケンと呼ぶ)",c:["him Ken","Ken him","Ken to him"],a:0,e:"O(him)+C(Ken)の順、him=Kenという関係になる。"},
+ ]},
+{title:"10. 後置修飾と関係代名詞",
+ rule:`英語は名詞を先に言い、説明を後ろに足す。
+関係代名詞は人かモノか、主格か目的格かで選ぶ。主格は省略不可、目的格は省略可。`,
+ example:`the boy who plays tennis(人の主格)
+the book (that) I bought(モノの目的格、省略可)`,
+ questions:[
+  {q:"the boy ___ plays tennis(人の主格)",c:["who","which","whom"],a:0,e:"人の主格はwho(またはthat)。"},
+  {q:"the book ___ I bought(モノの目的格)",c:["who","that","whose"],a:1,e:"モノの目的格はthat/which。省略も可能。"},
+  {q:"正しい文はどれ?",c:["The boy playing tennis is my brother.","The playing tennis boy is my brother.","The boy play tennis is my brother."],a:0,e:"説明のかたまりは名詞の後ろに置く。"},
+  {q:"省略できないのはどれ?",c:["目的格の関係代名詞","主格の関係代名詞","どちらも省略できる"],a:1,e:"主格の関係代名詞(who/which)は省略できない。"},
+ ]},
+{title:"11. 接続詞と間接疑問文",
+ rule:`接続詞は「文(主語＋動詞)」どうしをつなぐ接着剤。
+間接疑問文は疑問詞の後ろを「普通の文の順番」に戻すだけ。`,
+ example:`If it rains tomorrow, I'll stay home.(未来でも現在形)
+Do you know where he lives?(間接疑問文)`,
+ questions:[
+  {q:"If it ___ tomorrow, I'll stay home.",c:["will rain","rains","rained"],a:1,e:"if/whenの中は未来のことでも現在形で表す。"},
+  {q:"I think ___ he is kind.",c:["that","what","if"],a:0,e:"「~ということ」を表す接続詞はthat(省略も可)。"},
+  {q:"Do you know where ___?(彼が住んでいる)",c:["does he live","he lives","he live"],a:1,e:"間接疑問文は疑問詞の後ろを主語+動詞の順に戻す。"},
+  {q:"Tell me when ___.(彼女が来たか)",c:["did she come","she came","she come"],a:1,e:"didは消え、動詞が時制に合った形(came)に戻る。"},
+ ]},
+{title:"12. 仮定法：「現実とは違う」を表す",
+ rule:`今の現実と違うことを想像して話す形。
+時制を1つ過去にずらすことで「現実との距離」を出す。be動詞は主語が何でもwere。`,
+ example:`If I were a bird, I could fly to you.
+I wish I had a dog.(実際は飼っていない)`,
+ questions:[
+  {q:"If I ___ a bird, I could fly to you.",c:["am","was","were"],a:2,e:"仮定法のbe動詞は主語が何でもwere。"},
+  {q:"I wish I ___ a dog.(実際は飼っていない)",c:["have","had","will have"],a:1,e:"I wish+過去形で「~だったらいいのに」。"},
+  {q:"If I had time, I ___ help you.",c:["will","would","can"],a:1,e:"仮定法ではwillではなくwouldを使う。"},
+  {q:"仮定法の本質は?",c:["時制を1つ過去にずらし現実との距離を出す","未来のことを表す","命令を表す"],a:0,e:"今のことなのに過去形を使うのは現実との距離を出すため。"},
+ ]},
+{title:"13. 名詞・冠詞・代名詞",
+ rule:`名詞を使うたびに「数えられるか」と「相手もわかる特定のものか」を気にする。
+この2つでa/the/-sが決まる。`,
+ example:`I have a dog.(初めて話題に出る1つ)
+The dog is very cute.(特定できるのでthe)
+two glasses of water(数えられない名詞)`,
+ questions:[
+  {q:"I have ___ dog.",c:["a","the","an"],a:0,e:"初めて話題に出す「どれでもいい1つ」はa。"},
+  {q:"正しいのはどれ?",c:["two waters","two glasses of water","two water"],a:1,e:"waterは数えられない名詞なので容器で数える。"},
+  {q:"This is for ___.(私のために)",c:["I","my","me"],a:2,e:"前置詞の後ろは目的語の形。"},
+  {q:"複数形が不規則なのはどれ?",c:["books","child → children","cats"],a:1,e:"child→childrenは不規則変化。"},
+ ]},
+{title:"14. 形容詞・副詞・数量",
+ rule:`形容詞は名詞を説明し、副詞は名詞以外(動詞・形容詞・文全体)を説明する。
+「何を説明しているか」だけでどちらを使うか決まる。`,
+ example:`He drives carefully.(動詞を説明=副詞)
+He speaks English well.(goodの副詞はwell)`,
+ questions:[
+  {q:"He drives ___.(注意深く)",c:["careful","carefully","care"],a:1,e:"動詞drivesを説明するので副詞carefully。"},
+  {q:"He speaks English ___.(上手に)",c:["good","well","goodly"],a:1,e:"goodの副詞はwell。"},
+  {q:"I have ___ pens.(たくさん)",c:["much","many","little"],a:1,e:"pensは数えられる名詞なのでmany。"},
+  {q:"I ___ play tennis.(よく)",c:["play often","often play","play are often"],a:1,e:"頻度の副詞は一般動詞の前に置く。"},
+ ]},
+{title:"15. 前置詞：「位置関係の絵」で覚える",
+ rule:`前置詞は名詞の前に置いて「どこで・いつ・何と」を表す言葉。
+日本語訳で覚えず、1つの位置関係の絵で覚える。`,
+ example:`go to school by bus(手段)
+wait until five(その時までずっと)
+on Monday(曜日はon)`,
+ questions:[
+  {q:"I go to school ___ bus.",c:["by","with","for"],a:0,e:"手段を表すのはby。"},
+  {q:"Wait ___ five.(5時までずっと)",c:["by","until","to"],a:1,e:"untilは「その時までずっと」、byは「期限」。"},
+  {q:"正しいのはどれ?",c:["on Monday","in Monday","at Monday"],a:0,e:"曜日はonを使う。"},
+  {q:"前置詞をつけないのはどれ?",c:["go to home","go home","go to school"],a:1,e:"homeは前置詞なしで使う特別な語。"},
+ ]},
+{title:"16. いろいろな文：命令文・There is・感嘆文",
+ rule:`どれも「主語＋動詞」の基本形を少し変えただけ。
+何を変えたかがわかればまとめて理解できる。`,
+ example:`Open the window.(命令文)
+There is a cat under the table.(存在)
+What a beautiful flower!(感嘆文)`,
+ questions:[
+  {q:"___ the window.(開けなさい)",c:["You open","Open","To open"],a:1,e:"命令文は主語youを省略し動詞の原形で始める。"},
+  {q:"___ a cat under the table.",c:["There is","There are","It is"],a:0,e:"後ろの名詞aが単数なのでThere is。"},
+  {q:"正しい文はどれ?",c:["There is my bag on the desk.","My bag is on the desk.","There my bag is on the desk."],a:1,e:"特定のもの(my bag)にはThere is/areを使わない。"},
+  {q:"___ beautiful flower!(感嘆文)",c:["What a","How a","What"],a:0,e:"名詞があるときはWhat a/anを使う。"},
+ ]},
+{title:"17. 不定詞の発展：「誰が」「何を」を足す",
+ rule:`to不定詞に「誰がするのか」を足した形。
+make/let/helpの後ろはtoなしの原形不定詞(直接させるイメージ)。`,
+ example:`I want you to come.
+My mother made me clean my room.(toなし)
+It is easy for me to swim.`,
+ questions:[
+  {q:"I want ___ come.(人に~してほしい)",c:["you to","that you","you"],a:0,e:"want 人 to doの形。"},
+  {q:"My mother made me ___ my room.",c:["to clean","cleaning","clean"],a:2,e:"makeの後ろは動詞の原形(toをつけない)。"},
+  {q:"I don't know ___ to use it.(どう使えばよいか)",c:["how","what","that"],a:0,e:"疑問詞+to doで「どう~すればよいか」。"},
+  {q:"It is easy ___ me to swim.",c:["for","of","to"],a:0,e:"It is~for 人 to doで「(人が)することは~だ」。"},
+ ]},
+];
+
+/* ---------------- content: 高校英文法 (20 units) ---------------- */
+const HIGH = [
+{title:"1. 文の骨組み：飾りを外してS・Vを探す",
+ rule:`高校の英文が難しく見えるのは「飾り」が長いから。
+飾りを外せば中学で習った短い文が残る。まずSとVを探す。`,
+ example:`Birds fly.(第1文型)
+She became a doctor.(第2文型、S=C)
+The news made her sad.(第5文型、O=C)`,
+ questions:[
+  {q:"I found the book ___.(面白いと思った)",c:["interesting","interestingly","interest"],a:0,e:"第5文型のCには形容詞を使う。副詞interestinglyは誤り。"},
+  {q:"She looks ___.(幸せそうに見える)",c:["happy","happily","happiness"],a:0,e:"look/sound/seem/becomeなどの後は形容詞(C)が続く。"},
+  {q:"Birds fly. の文型は?",c:["第1文型(SV)","第2文型(SVC)","第3文型(SVO)"],a:0,e:"flyの後ろに何もないので第1文型。"},
+  {q:"He gave me a pen. の文型は?",c:["第3文型(SVO)","第4文型(SVOO)","第5文型(SVOC)"],a:1,e:"me≠a penで別物なのでO+Oが並ぶ第4文型。"},
+ ]},
+{title:"2. 時制と完了形：「基準点」をどこに置くか",
+ rule:`完了形はどれも「基準点までのつながり」。
+基準点を過去にずらすと過去完了、未来にずらすと未来完了。`,
+ example:`When I arrived, the train had already left.(過去完了)
+I will have finished it by six.(未来完了)`,
+ questions:[
+  {q:"When I arrived, the train ___ already left.",c:["has","had","will have"],a:1,e:"到着時という過去の時点より前のことなので過去完了。"},
+  {q:"I ___ it by six tomorrow.(明日6時までには終えているだろう)",c:["finish","have finished","will have finished"],a:2,e:"未来のある時点を基準にした完了は未来完了。"},
+  {q:"I'll call you when I ___ it.(終えたら電話する)",c:["will finish","have finished","will have finished"],a:1,e:"時・条件の副詞節は未来のことでも現在形/現在完了で表す。"},
+  {q:"It has been ten years ___ he died.",c:["since","for","when"],a:0,e:"It has been+期間+since~で「~してから…になる」。"},
+ ]},
+{title:"3. 助動詞の発展：「確信度」と「過去への判断」",
+ rule:`助動詞+have doneで過去のことを今ふり返って判断する形になる。
+should have doneは「すべきだったのに実際はしなかった」。`,
+ example:`He must be tired.(きっと疲れているに違いない)
+I should have studied harder.(すべきだったのに…)`,
+ questions:[
+  {q:"He ___ be tired.(きっと疲れているに違いない)",c:["must","may","cannot"],a:0,e:"確信度が最も強いのはmust。"},
+  {q:"I ___ harder.(もっと勉強すべきだったのに、しなかった)",c:["should study","should have studied","must study"],a:1,e:"should have doneは「すべきだったのに実際はしなかった」。"},
+  {q:"He ___ true.(本当のはずがない)",c:["cannot be","must be","may be"],a:0,e:"強い否定的な確信はcannot。"},
+  {q:"I am ___ getting up early.(早起きするのに慣れている)",c:["used to","used to do","use to"],a:0,e:"be used to doingの「to」は前置詞。"},
+ ]},
+{title:"4. 準動詞：不定詞・動名詞・分詞の「主語・時・向き」",
+ rule:`不定詞・動名詞・分詞は「誰が(主語)」「いつ(時)」「するのかされるのか(向き)」の3情報を持つ。`,
+ example:`It is hard for me to get up early.
+He seems to have been sick.(以前病気だったらしい)
+It is kind of you to help me.`,
+ questions:[
+  {q:"It is hard ___ to get up early.(私にとって)",c:["for me","of me","to me"],a:0,e:"不定詞の意味上の主語は通常for 人。"},
+  {q:"I don't mind ___ coming.(彼が来ても気にしない)",c:["he","his","him to"],a:1,e:"動名詞の意味上の主語は所有格(または目的格)。"},
+  {q:"He seems ___ sick.(以前病気だったようだ)",c:["to be","to have been","having been"],a:1,e:"本動詞より前のことはto have doneで表す。"},
+  {q:"It is kind ___ you to help me.",c:["for","of","to"],a:1,e:"人の性格を表す形容詞の後はofを使う。"},
+ ]},
+{title:"5. 分詞構文：「接続詞＋SV」を縮めた形",
+ rule:`分詞構文はwhen/because/ifなどの副詞節を縮めた書き言葉。
+受け身はBeing/過去分詞、より前のことはhaving done、否定はnotを分詞の前に。`,
+ example:`Written in easy English, this book is popular.
+Having finished his work, he went home.
+Not knowing what to say, she remained silent.`,
+ questions:[
+  {q:"___ in easy English, this book is popular.(簡単な英語で書かれているので)",c:["Writing","Written","To write"],a:1,e:"受け身の意味なので過去分詞(Beingは省略)で始める。"},
+  {q:"___ his work, he went home.(仕事を終えた後)",c:["Finishing","Having finished","Finished"],a:1,e:"主節より前のことなのでhaving doneを使う。"},
+  {q:"___ what to say, she remained silent.(何を言うべきかわからなかったので)",c:["Not knowing","Knowing not","No knowing"],a:0,e:"分詞構文の否定はnotを分詞の前に置く。"},
+  {q:"( ) from the sky, the island looks like a heart.",c:["Seeing","Seen","To see"],a:1,e:"islandは「見られる」側なのでSeen(過去分詞)が正解。"},
+ ]},
+{title:"6. 関係詞の発展：「後ろが完全か不完全か」で選ぶ",
+ rule:`関係詞の選択は意味ではなく、後ろの文に「欠け」があるかで解く。
+関係代名詞は後ろが不完全、関係副詞は後ろが完全な文。`,
+ example:`This is the house where I live.(完全)
+This is the house which I bought.(不完全)
+What he said is true.`,
+ questions:[
+  {q:"This is the house ___ I live.",c:["which","where","what"],a:1,e:"liveは完結する動詞で後ろが完全文なのでwhere。"},
+  {q:"This is the house ___ I bought.",c:["which","where","why"],a:0,e:"boughtの目的語が欠けている(不完全)のでwhich。"},
+  {q:"___ he said is true.(彼が言ったことは本当だ)",c:["What","That","Which"],a:0,e:"先行詞がなく後ろが不完全なのでwhat。"},
+  {q:"I have two sons, ___ live in Tokyo.(非制限用法)",c:["that","who","which"],a:1,e:"非制限用法(コンマ+関係詞)ではthatは使えない。"},
+ ]},
+{title:"7. 仮定法：時制を1つ過去にずらす",
+ rule:`仮定法は「現実から離れている」ことを時制を1つ過去にずらして表す。
+ifを使わない仮定法や、ifの省略による倒置も多い。`,
+ example:`I wish I had studied harder.
+Had it not been for your help, I would have failed.`,
+ questions:[
+  {q:"I wish I ___ harder.(もっと勉強していたらよかったのに)",c:["study","studied","had studied"],a:2,e:"過去のことを悔やむのでI wish+過去完了。"},
+  {q:"He talks ___ he knew everything.(まるで知っているかのように)",c:["as if","even if","so that"],a:0,e:"as if+過去形で「まるで~かのように」。"},
+  {q:"___ it not been for your help, I would have failed.",c:["Had","If","Were"],a:0,e:"ifの省略による倒置:Had+主語+not been for~。"},
+  {q:"___ you need help, call me.(万一助けが必要なら)",c:["Should","Would","Were"],a:0,e:"If you should need helpのifを省略した倒置。"},
+ ]},
+{title:"8. 比較の発展：「何と何を比べているか」をそろえる",
+ rule:`比較は同じ種類のものどうしを比べる。
+倍数・差・否定を使った表現が中学の比較に加わる。`,
+ example:`The population of Tokyo is larger than that of Osaka.
+The more you read, the better you write.`,
+ questions:[
+  {q:"The population of Tokyo is larger than ___ of Osaka.",c:["that","it","one"],a:0,e:"比べる対象をそろえるためthat of Osakaとする。"},
+  {q:"This room is three times ___ that one.(3倍の大きさ)",c:["as large as","larger than","the largest"],a:0,e:"倍数表現はX times as~asの形。"},
+  {q:"The more you read, ___.(読めば読むほど賢くなる)",c:["the wiser you become","you become the wiser","wiser you become"],a:0,e:"the+比較級, the+比較級の構文。"},
+  {q:"Mt. Fuji is higher than ___ mountain in Japan.",c:["any other","any another","all other"],a:0,e:"比較級+than any other+単数名詞で最上級の意味になる。"},
+ ]},
+{title:"9. 接続詞と名詞節・副詞節：「文の部品」か「飾り」か",
+ rule:`接続詞で始まる節は2種類。文の部品(S・O・C)になる名詞節と、
+外しても文が成り立つ飾りの副詞節。同じthat/ifでも働きが変わる。`,
+ example:`I know that he is honest.(名詞節)
+I was so tired that I fell asleep.(副詞節)`,
+ questions:[
+  {q:"I don't know ___ he will come.(来るかどうか)",c:["if","unless","although"],a:0,e:"「~かどうか」を表す名詞節の接続詞はif。"},
+  {q:"If he ___ tomorrow, I'll tell him.(明日来たら)",c:["comes","will come","come"],a:0,e:"条件を表す副詞節は未来のことでも現在形で表す。"},
+  {q:"I was so tired ___ I fell asleep.",c:["that","if","because of"],a:0,e:"so~that…で「とても~なので…」。"},
+  {q:"___ it rained, we stayed home.",c:["Because","Because of","Despite"],a:0,e:"後ろがSVの節なのでbecause(前置詞ならbecause of)。"},
+ ]},
+{title:"10. 特殊構文：語順を崩すのは「目立たせたい」とき",
+ rule:`いつもの語順を崩すとそこが強調される。
+強調構文・倒置は「ここを読んでほしい」という書き手の合図。`,
+ example:`It was Ken that broke the window.(強調構文)
+Never have I seen such a beautiful view.(倒置)`,
+ questions:[
+  {q:"It was Ken ___ broke the window.(強調構文)",c:["that","what","it"],a:0,e:"It is/was~that…の強調構文。"},
+  {q:"___ have I seen such a beautiful view.",c:["Never","Ever","Not"],a:0,e:"Neverを文頭に出すと倒置(have I seen)が起こる。"},
+  {q:"___ sooner had he arrived than he left.",c:["No","Not","Never"],a:0,e:"No sooner~thanの倒置構文で「~するとすぐに」。"},
+  {q:"The heavy rain ___ us from going out.(大雨のため外出できなかった)",c:["prevented","made","caused"],a:0,e:"prevent A from doingで「Aが~するのを妨げる」無生物主語構文。"},
+ ]},
+{title:"11. 受動態の発展：「目的語だったもの」なら何でも主語にできる",
+ rule:`受け身は目的語を主語の位置に移すだけ。動詞部分には必ずbe+過去分詞が残る。
+群動詞は前置詞を落とさない。`,
+ example:`He was spoken to by a stranger.
+I was given a book.(=He gave me a book.)`,
+ questions:[
+  {q:"He was ___ by a stranger.(見知らぬ人に話しかけられた)",c:["spoken","spoken to","spoken at"],a:1,e:"speak to~の受け身はtoを落とさない(群動詞)。"},
+  {q:"I was given a book. の元の文は?",c:["He gave me a book.","He gave a book to me.","He gave a book of me."],a:0,e:"SVOOの一方のOを主語にした受け身。"},
+  {q:"He ___ at by everyone.(彼はみんなに笑われた)",c:["was laughed","laughed","is laughing"],a:0,e:"be laughed atで「笑われる」という群動詞の受け身。"},
+  {q:"正しい文はどれ?(生まれる)",c:["I was born in Tokyo.","I born in Tokyo.","I am bearing in Tokyo."],a:0,e:"be bornは「生まれる」を表す受け身の形で使う。"},
+ ]},
+{title:"12. 不定詞・動名詞の慣用表現：「to＝これから」「-ing＝現実」",
+ rule:`toは向かう先・これから、-ingは今している・した現実という感覚で説明できる。
+特にtoが前置詞で後ろに-ingが来る表現に注意。`,
+ example:`I'm looking forward to seeing you.
+It is no use crying over spilt milk.`,
+ questions:[
+  {q:"I'm looking forward to ___ you.(会えるのを楽しみにしている)",c:["see","seeing","saw"],a:1,e:"look forward to doingのtoは前置詞なので-ing。"},
+  {q:"It is no use ___ over spilt milk.",c:["cry","crying","to cry"],a:1,e:"It is no use doingで「~しても無駄だ」。"},
+  {q:"He is ___ leave.(まさに出発しようとしている)",c:["about to","used to","going"],a:0,e:"be about to doで「まさに~しようとしている」。"},
+  {q:"This book is worth ___.(読む価値がある)",c:["reading","to read","being read"],a:0,e:"be worth doingで「~する価値がある」。受け身にしない。"},
+ ]},
+{title:"13. 名詞・冠詞の発展：「形があるか」と「特定できるか」",
+ rule:`名詞は「はっきりした形や区切りがあるか」で可算・不可算が決まる。
+まとめての総称・抽象的なもの・材料は不可算名詞になりやすい。`,
+ example:`a piece of furniture / a piece of advice
+Close the door.(特定できる) / go to school(無冠詞、目的)`,
+ questions:[
+  {q:"正しいのはどれ?",c:["many furniture","much furniture","a furniture"],a:1,e:"furnitureは不可算名詞なのでmuchを使う。"},
+  {q:"I'd like to give you ___ advice.(ひとつの助言)",c:["an","a piece of","some pieces"],a:1,e:"adviceは不可算名詞なのでa piece ofで数える。"},
+  {q:"Close ___ door.(その扉)",c:["a","the","無冠詞"],a:1,e:"話し手と聞き手が同じ扉を思い浮かべられるのでthe。"},
+  {q:"go to ___ school(授業を受けに行く)",c:["a","the","無冠詞"],a:2,e:"「勉強しに行く」という目的を表すときは無冠詞。"},
+ ]},
+{title:"14. 代名詞：「同じもの」か「同じ種類の別のもの」か",
+ rule:`itは「まさにそれそのもの」、oneは「同じ種類の別の1つ」。
+other系はtheがつくと「残り全部」になる。`,
+ example:`I lost my umbrella. I have to find it.(そのもの)
+I lost my umbrella. I have to buy one.(別の1本)`,
+ questions:[
+  {q:"I lost my umbrella. I have to buy ___.(別の傘を買う)",c:["it","one","that"],a:1,e:"同じ種類の別の1つを指すのでone。"},
+  {q:"I lost my umbrella. I have to find ___.(なくしたその傘を)",c:["it","one","some"],a:0,e:"なくしたまさにその傘を指すのでit。"},
+  {q:"They talked ___.(お互いに)",c:["each other","with each other","to each other each"],a:1,e:"each otherの前には前置詞が必要。"},
+  {q:"I have two pens. One is red and ___ is blue.(残りの1つ)",c:["another","other","the other"],a:2,e:"2つのうち残り1つはthe otherを使う。"},
+ ]},
+{title:"15. 形容詞・副詞：似た形と「何を説明するか」に注意",
+ rule:`形容詞は名詞を、副詞は名詞以外を説明する。
+つづりが似て意味が違う形容詞、意味が変わる-ly副詞が狙われる。`,
+ example:`economic(経済の)/economical(節約になる)
+hard(一生懸命に)/hardly(ほとんど~ない)`,
+ questions:[
+  {q:"___ tomorrow convenient for you?",c:["Are","Is","Do"],a:1,e:"convenientはもの・ことを主語にする形容詞。"},
+  {q:"He ___ worked today.(ほとんど働かなかった)",c:["hard","hardly","hardness"],a:1,e:"hardly=ほとんど~ない。hard=一生懸命に、とは意味が違う。"},
+  {q:"He came home ___ last night.(遅く)",c:["late","lately","later"],a:0,e:"lateは「遅く」、latelyは「最近」で意味が違う。"},
+  {q:"This is ___ use of resources.(資源の節約になる使い方)",c:["an economic","an economical","an economy"],a:1,e:"economic=経済の、economical=節約になる。"},
+ ]},
+{title:"16. 前置詞の発展：1つのコアイメージから意味を広げる",
+ rule:`前置詞は意味がたくさんあるように見えるが、どれも1つの位置関係(コアイメージ)から広がっている。`,
+ example:`Finish it by five.(期限) / Wait here until five.(継続)
+This table is made of wood.(見てわかる材料)`,
+ questions:[
+  {q:"Finish it ___ five.(5時までに)",c:["by","until","for"],a:0,e:"byは「期限」を表す。"},
+  {q:"Wait here ___ five.(5時までずっと)",c:["by","until","to"],a:1,e:"untilは「その時までずっと(継続)」を表す。"},
+  {q:"This table is made ___ wood.(見てわかる材料)",c:["of","from","with"],a:0,e:"見た目でわかる材料はmade of。"},
+  {q:"He did it ___ purpose.(わざと)",c:["on","by","with"],a:0,e:"on purpose=わざと(intentionally)。"},
+ ]},
+{title:"17. 否定：「全部」を否定すると「一部」になる",
+ rule:`notは直後の言葉を否定する。「全部・いつも」を否定すると「一部はそうだ」(部分否定)に、
+「全部違う」はno/none/neverで表す(全否定)。`,
+ example:`Not all of them came.(部分否定)
+None of them came.(全否定)`,
+ questions:[
+  {q:"___ of them came.(誰も来なかった)",c:["Not all","None","Not always"],a:1,e:"「誰も~ない」という全否定はnone。"},
+  {q:"He is not ___ busy.(いつも忙しいとは限らない)",c:["always","never","ever"],a:0,e:"not alwaysで部分否定「いつも~とは限らない」。"},
+  {q:"He ___ studies.(めったに勉強しない)",c:["hardly","seldom","little"],a:1,e:"seldom/rarelyは頻度を表す準否定語。"},
+  {q:"His answer is ___ perfect.(決して完璧ではない)",c:["far from","free from","fail to"],a:0,e:"far from~で「決して~ではない」。"},
+ ]},
+{title:"18. 話法と時制の一致：「話し手の今」に合わせて言い換える",
+ rule:`間接話法では「誰が・いつ・どこで」を伝える人の立場に合わせて全部言い換える。
+不変の真理は時制の一致をしない。`,
+ example:`He said, "I am busy now." → He said that he was busy then.
+He said, "Where do you live?" → He asked where I lived.`,
+ questions:[
+  {q:`He said, "I am busy now." → He said that he ___ busy then.`,c:["is","was","will be"],a:1,e:"間接話法では現在形isを過去形wasに言い換える。"},
+  {q:`He said to me, "Are you tired?" → He asked me ___ I was tired.`,c:["that","if","what"],a:1,e:"Yes/No疑問文の間接話法はask+if(whether)。"},
+  {q:`He said, "Where do you live?" → He asked ___.`,c:["where did I live","where I lived","where I live"],a:1,e:"間接疑問文の語順(主語+動詞)に時制の一致を加える。"},
+  {q:"The teacher said that the earth ___ around the sun.(不変の真理)",c:["goes","went","would go"],a:0,e:"不変の真理は時制の一致をせず現在形のまま使う。"},
+ ]},
+{title:"19. 疑問文の発展：疑問の形をした「確認」と「主張」",
+ rule:`高校で習う疑問文は、本当に質問するより「確認」や「主張」のために疑問の形を借りているものが中心。`,
+ example:`You are tired, aren't you?(付加疑問)
+Where do you think he lives?(疑問詞が先頭)`,
+ questions:[
+  {q:"You are tired, ___?",c:["are you","aren't you","don't you"],a:1,e:"肯定文の付加疑問は否定形にする。"},
+  {q:"Don't you like coffee? — Yes, I ___.(好きな場合)",c:["do","don't","am"],a:0,e:"答えの内容が肯定ならYes, I do(日本語の「はい/いいえ」と逆になる)。"},
+  {q:"___ do you think he lives?(どこに住んでいると思う?)",c:["Do you think where","Where do you think","Where think you"],a:1,e:"think/believeなどを含む疑問文は疑問詞が文頭に出る。"},
+  {q:"Open the door, ___?(命令文の付加疑問)",c:["will you","do you","shall we"],a:0,e:"命令文の付加疑問はwill you。"},
+ ]},
+{title:"20. 主語と動詞の一致・名詞構文",
+ rule:`動詞の単数・複数は主語の「中心の名詞」で決まる。
+名詞構文は名詞を文に戻して訳すとわかりやすい。`,
+ example:`The number of students is increasing.(単数扱い)
+A number of students are absent.(複数扱い)`,
+ questions:[
+  {q:"The number of students ___ increasing.",c:["is","are","were"],a:0,e:"the number of~は単数扱い。"},
+  {q:"A number of students ___ absent.(多くの学生が欠席)",c:["is","are","was"],a:1,e:"a number of~(=many)は複数扱い。"},
+  {q:"Either you or he ___ to go.(どちらかが行かなければならない)",c:["have","has","having"],a:1,e:"either A or Bは近い方(B)の人称・数に動詞を合わせる。"},
+  {q:"his arrival at the station は何を表す名詞構文か?",c:["彼が駅に着いたこと","彼を駅に迎えること","駅が到着されること"],a:0,e:"his arrival=he arrived(彼が到着した)という文に戻して訳す。"},
+ ]},
+];
+
+const SERIES = {
+  junior:{label:"中学英文法", key:"junior", units:JUNIOR, storageKey:"gdj-junior-done"},
+  high:{label:"高校英文法", key:"high", units:HIGH, storageKey:"gdj-high-done"},
+};
+
+/* ---------------- state ---------------- */
+let state = {screen:"home", seriesKey:null, unitIndex:0, qIndex:0, score:0, combo:0};
+
+function loadDone(seriesKey){
+  try{
+    const raw = localStorage.getItem(SERIES[seriesKey].storageKey);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  }catch(e){ return new Set(); }
+}
+function saveDone(seriesKey, set){
+  try{ localStorage.setItem(SERIES[seriesKey].storageKey, JSON.stringify([...set])); }catch(e){}
+}
+
+const app = document.getElementById("app");
+
+function el(html){
+  const t = document.createElement("template");
+  t.innerHTML = html.trim();
+  return t.content.firstElementChild;
+}
+
+function render(){
+  app.innerHTML = "";
+  if(state.screen === "home") app.appendChild(renderHome());
+  else if(state.screen === "menu") app.appendChild(renderMenu());
+  else if(state.screen === "rule") app.appendChild(renderRule());
+  else if(state.screen === "quiz") app.appendChild(renderQuiz());
+  else if(state.screen === "result") app.appendChild(renderResult());
+}
+
+function topbar(backLabel, onBack){
+  const bar = el(`<div class="topbar"></div>`);
+  if(backLabel){
+    const b = el(`<button class="backbtn">← ${backLabel}</button>`);
+    b.onclick = onBack;
+    bar.appendChild(b);
+  }
+  bar.appendChild(el(`<div class="brand">文法道場</div>`));
+  return bar;
+}
+
+function mascot(mood){
+  const m = el(`<div class="mascot ${mood||""}">
+    <div class="body"></div>
+    <div class="eye l"></div><div class="eye r"></div>
+    <div class="cheek l"></div><div class="cheek r"></div>
+  </div>`);
+  return m;
+}
+
+function renderHome(){
+  const wrap = el(`<div class="screen"></div>`);
+  wrap.appendChild(topbar(null));
+  const hero = el(`<div class="hero">
+    <div class="kicker">確認テスト</div>
+    <h1>文法道場</h1>
+    <p>シンプルに考えれば、点数は取れる。</p>
+  </div>`);
+  hero.appendChild(mascot(""));
+  wrap.appendChild(hero);
+
+  const cards = el(`<div class="seriescards"></div>`);
+  const juniorCard = el(`<button class="seriescard">
+    <div><div class="t">中学英文法</div><div class="s">17単元・68問</div></div>
+    <div class="arrow">→</div>
+  </button>`);
+  juniorCard.onclick = ()=>{ state.seriesKey="junior"; state.screen="menu"; render(); };
+  const highCard = el(`<button class="seriescard alt">
+    <div><div class="t">高校英文法</div><div class="s">20単元・80問</div></div>
+    <div class="arrow">→</div>
+  </button>`);
+  highCard.onclick = ()=>{ state.seriesKey="high"; state.screen="menu"; render(); };
+  cards.appendChild(juniorCard);
+  cards.appendChild(highCard);
+  wrap.appendChild(cards);
+  return wrap;
+}
+
+function renderMenu(){
+  const series = SERIES[state.seriesKey];
+  const done = loadDone(state.seriesKey);
+  const wrap = el(`<div class="screen"></div>`);
+  wrap.appendChild(topbar("シリーズ選択", ()=>{ state.screen="home"; render(); }));
+  wrap.appendChild(el(`<div class="menutitle"><h2>${series.label} 確認テスト</h2><p>単元を選んでチェック！</p></div>`));
+  const list = el(`<div class="unitlist"></div>`);
+  series.units.forEach((u,i)=>{
+    const b = el(`<button class="unitbtn ${done.has(i)?"done":""}">
+      <span class="num">${done.has(i)?"✓":(i+1)}</span>
+      <span class="ttl">${u.title.replace(/^\d+\.\s*/,"")}</span>
+    </button>`);
+    b.onclick = ()=>{ state.unitIndex=i; state.screen="rule"; render(); };
+    list.appendChild(b);
+  });
+  wrap.appendChild(list);
+  return wrap;
+}
+
+function renderRule(){
+  const series = SERIES[state.seriesKey];
+  const unit = series.units[state.unitIndex];
+  const wrap = el(`<div class="screen"></div>`);
+  wrap.appendChild(topbar("単元一覧", ()=>{ state.screen="menu"; render(); }));
+  wrap.appendChild(el(`<h2 class="ruletitle">${unit.title}</h2>`));
+  wrap.appendChild(el(`<div class="card rule"><span class="label">本質</span>${unit.rule}</div>`));
+  wrap.appendChild(el(`<div class="card example"><span class="label" style="color:var(--accent)">例文</span>${unit.example}</div>`));
+  const startBtn = el(`<button class="primarybtn">クイズへ</button>`);
+  startBtn.onclick = ()=>{ state.qIndex=0; state.score=0; state.combo=0; state.screen="quiz"; render(); };
+  wrap.appendChild(startBtn);
+  return wrap;
+}
+
+function renderDiagram(d){
+  const box = el(`<div class="diagram"></div>`);
+  const row = el(`<div class="row"></div>`);
+  d.boxes.forEach((b,i)=>{
+    if(i>0) row.appendChild(el(`<span class="arrow">→</span>`));
+    row.appendChild(el(`<span class="box ${b[1]?"accent":""}">${b[0]}</span>`));
+  });
+  box.appendChild(row);
+  box.appendChild(el(`<div class="cap">${d.cap}</div>`));
+  return box;
+}
+
+function renderQuiz(){
+  const series = SERIES[state.seriesKey];
+  const unit = series.units[state.unitIndex];
+  const q = unit.questions[state.qIndex];
+  const wrap = el(`<div class="screen"></div>`);
+  wrap.appendChild(topbar("単元一覧", ()=>{ state.screen="menu"; render(); }));
+  wrap.appendChild(el(`<div class="quizhead">${unit.title.replace(/^\d+\.\s*/,"")}　(${state.qIndex+1}/${unit.questions.length})</div>`));
+  const pbar = el(`<div class="progressbar"><i style="width:${(state.qIndex)/unit.questions.length*100}%"></i></div>`);
+  wrap.appendChild(pbar);
+  if(unit.diagram) wrap.appendChild(renderDiagram(unit.diagram));
+  wrap.appendChild(el(`<div class="card prompt">${q.q}</div>`));
+
+  const combo = el(`<div class="combo ${state.combo>=2?"show":""}">${state.combo>=2?"🔥 "+state.combo+"連続正解!":""}</div>`);
+  wrap.appendChild(combo);
+
+  const choices = el(`<div class="choices"></div>`);
+  const feedback = el(`<div class="feedback"></div>`);
+  const mascotEl = mascot("");
+  mascotEl.style.margin = "0 auto";
+
+  q.c.forEach((label, i)=>{
+    const btn = el(`<button class="choice">${label}</button>`);
+    btn.onclick = ()=>{
+      const correct = i === q.a;
+      [...choices.children].forEach((c,ci)=>{
+        c.disabled = true;
+        if(ci===q.a) c.classList.add("correct");
+        else if(ci===i) c.classList.add("incorrect");
+      });
+      if(correct){
+        state.score++; state.combo++;
+        feedback.textContent = "正解！ " + q.e;
+        feedback.className = "feedback correct";
+        mascotEl.className = "mascot happy bounce";
+      }else{
+        state.combo = 0;
+        feedback.textContent = "おしい！ " + q.e;
+        feedback.className = "feedback incorrect";
+        mascotEl.className = "mascot sad bounce";
+      }
+      combo.textContent = state.combo>=2 ? "🔥 "+state.combo+"連続正解!" : "";
+      combo.classList.toggle("show", state.combo>=2);
+      nextBtn.hidden = false;
+    };
+    choices.appendChild(btn);
+  });
+  wrap.appendChild(choices);
+  wrap.appendChild(feedback);
+  wrap.appendChild(mascotEl);
+
+  const nextBtn = el(`<button class="primarybtn" hidden>次へ</button>`);
+  nextBtn.onclick = ()=>{
+    state.qIndex++;
+    if(state.qIndex < unit.questions.length){ render(); }
+    else{
+      const done = loadDone(state.seriesKey);
+      if(state.score >= unit.questions.length - Math.floor(unit.questions.length/3)){
+        done.add(state.unitIndex);
+        saveDone(state.seriesKey, done);
+      }
+      state.screen = "result";
+      render();
+    }
+  };
+  wrap.appendChild(nextBtn);
+  return wrap;
+}
+
+function renderResult(){
+  const series = SERIES[state.seriesKey];
+  const unit = series.units[state.unitIndex];
+  const pct = Math.round(state.score/unit.questions.length*100);
+  const didWell = state.score >= unit.questions.length - Math.floor(unit.questions.length/3);
+  const wrap = el(`<div class="screen"></div>`);
+  wrap.appendChild(topbar("単元一覧", ()=>{ state.screen="menu"; render(); }));
+  const rwrap = el(`<div class="resultwrap"></div>`);
+  rwrap.appendChild(mascot(didWell?"happy":""));
+  rwrap.appendChild(el(`<div class="ring" style="--pct:${pct}"><div class="inner"><b>${state.score}/${unit.questions.length}</b><span>正解</span></div></div>`));
+  rwrap.appendChild(el(`<div class="resulttitle">${unit.title.replace(/^\d+\.\s*/,"")}</div>`));
+  rwrap.appendChild(el(`<div class="resultmsg">${didWell? "よくできました！この調子で次の単元へ" : "もう一度、本質から見直してみよう"}</div>`));
+  const stack = el(`<div class="btnstack"></div>`);
+  const retry = el(`<button class="ghostbtn">もう一度</button>`);
+  retry.onclick = ()=>{ state.screen="rule"; render(); };
+  const nextUnit = el(`<button class="primarybtn">次の単元へ</button>`);
+  nextUnit.onclick = ()=>{ state.unitIndex=(state.unitIndex+1)%series.units.length; state.screen="rule"; render(); };
+  const toMenu = el(`<button class="ghostbtn">単元一覧へ</button>`);
+  toMenu.onclick = ()=>{ state.screen="menu"; render(); };
+  stack.appendChild(retry); stack.appendChild(nextUnit); stack.appendChild(toMenu);
+  rwrap.appendChild(stack);
+  wrap.appendChild(rwrap);
+  return wrap;
+}
+
+function start(){ render(); }
+if(window.claude && window.claude.hot){
+  window.claude.hot.ready ? window.claude.hot.ready(start) : start();
+}else{
+  start();
+}
+})();
+</script>
+
+</body></html>
