@@ -230,6 +230,14 @@ input,textarea{font:inherit;}
 .act-btn.ng{color:var(--bad); border-color:var(--bad);}
 .act-btn.ok{color:var(--good); border-color:var(--good);}
 
+
+.lt-promo{width:100%;max-width:360px;margin:22px auto 0;background:#1F3B63;color:#fff;border-radius:14px;padding:16px 16px 14px;text-align:left;box-shadow:0 4px 0 rgba(0,0,0,.18);font-family:inherit}
+.lt-promo .lt-k{font-size:11px;letter-spacing:.12em;color:#FFD54A;font-weight:700}
+.lt-promo .lt-h{font-size:16px;font-weight:700;line-height:1.45;margin:4px 0 6px}
+.lt-promo .lt-p{font-size:13px;line-height:1.6;color:#DCE4F0;margin:0 0 12px}
+.lt-promo .lt-p b{color:#fff}
+.lt-promo a{display:block;text-align:center;background:#D9571A;color:#fff;font-weight:700;font-size:14px;text-decoration:none;border-radius:10px;padding:11px 10px}
+.lt-promo a:focus-visible{outline:3px solid #FFD54A;outline-offset:2px}
 /* ---------- SUMMARY ---------- */
 .summary{display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; gap:18px; text-align:center; padding-block:30px;}
 .summary .badge{font-size:52px;}
@@ -947,6 +955,7 @@ function renderSummary(){
       (isCustom ? '<button id="toEdit">単語を編集する</button>' : '') +
       '<button id="toHome">道場に戻る</button>' +
     '</div>' +
+    '<div class="lt-promo"><div class="lt-k">NEXT STAGE</div><div class="lt-h">もっと本格的な英語ゲームで遊びたい人へ</div><p class="lt-p">無料相談をした人に<b>「英語読解ゲーム」「英語解釈ゲーム」「24時間質問チャット」</b>をプレゼント中！</p><a href="https://masaki-eigo.github.io/soudan.html">無料相談をのぞいてみる ▶</a></div>' +
   '</div>';
   app.innerHTML = html;
   var retryMissed = document.getElementById("retryMissed");
