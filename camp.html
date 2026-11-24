@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>1週間 英語ビートキャンプ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Dela+Gothic+One&family=M+PLUS+1p:wght@500;800&display=swap">
+<style>
+/* Layout concept: RPG menu windows stacked down a phone screen, matching the rich menu (navy ground, white-framed windows, pixel labels). */
+html{-webkit-text-size-adjust:100%}
+:root{
+  --ground:#070B26; --win:#0F1650; --frame:#FFFFFF; --inner:#6C7BD9;
+  --gold:#FFD54A; --ember:#FF7A2F; --quest:#3A1406; --mint:#5BE37D;
+  --ink:#FFFFFF; --soft:#C9D2FF;
+  --pixel:'DotGothic16',ui-monospace,monospace;
+  --display:'Dela Gothic One','Hiragino Sans','Yu Gothic',sans-serif;
+  --body:'M PLUS 1p','Hiragino Sans','Yu Gothic',sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--ground)}
+body{color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.75;
+  background:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px) 0 0/24px 24px,linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px) 0 0/24px 24px,var(--ground);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 48px}
+main{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:34px}
+.top{display:flex;flex-direction:column;gap:6px;padding-top:6px}
+.eyebrow{font-family:var(--pixel);color:var(--gold);letter-spacing:.12em;font-size:15px}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(34px,9vw,48px);line-height:1.15;margin:0;text-shadow:4px 4px 0 #000;text-wrap:balance}
+.lead{color:var(--soft);margin:4px 0 0}
+.win{position:relative;background:var(--win);border:5px solid var(--frame);border-radius:12px;
+  box-shadow:inset 0 0 0 4px var(--win),inset 0 0 0 6px var(--inner),0 6px 0 #000;padding:30px 20px 20px}
+.win.quest{background:var(--quest);box-shadow:inset 0 0 0 4px var(--quest),inset 0 0 0 6px var(--ember),0 6px 0 #000}
+.tab{position:absolute;top:0;left:16px;transform:translateY(-55%);background:var(--ground);border:4px solid var(--frame);border-radius:8px;padding:1px 12px;font-family:var(--pixel);font-size:14px;color:var(--gold);letter-spacing:.08em}
+.quest .tab{color:var(--ember)}
+h2{font-family:var(--display);font-weight:400;font-size:22px;margin:0 0 10px;text-wrap:balance}
+p{margin:0 0 10px}
+p:last-child{margin-bottom:0}
+.hl{color:var(--gold);font-weight:800}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.list li{padding-left:22px;position:relative}
+.list li::before{content:'▶';position:absolute;left:0;top:0;color:var(--gold);font-size:13px;line-height:1.75rem}
+.quest .list li::before{content:'◆';color:var(--ember)}
+.stats{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-family:var(--pixel);font-size:15px}
+.stats dt{color:var(--gold)}
+.stats dd{margin:0;color:var(--ink);min-width:0}
+.bar{height:16px;border:3px solid var(--frame);background:#000;margin-top:6px;position:relative}
+.bar i{position:absolute;inset:2px;background:linear-gradient(90deg,#FF5A3C,var(--gold) 60%,var(--mint))}
+.btn{display:block;text-align:center;text-decoration:none;font-family:var(--display);font-size:20px;color:#000;background:var(--gold);border:4px solid #000;border-radius:10px;padding:14px 12px;box-shadow:5px 5px 0 #000}
+.btn:focus-visible{outline:3px solid var(--mint);outline-offset:3px}
+.btn.alt{background:var(--ember)}
+.small{font-size:13px;color:var(--soft)}
+.steps{counter-reset:s;list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start}
+.steps li::before{content:counter(s);font-family:var(--display);font-size:20px;width:44px;height:44px;display:grid;place-items:center;background:var(--ground);border:3px solid var(--gold);color:var(--gold);border-radius:8px}
+.steps b{display:block}
+details{border-top:2px dashed rgba(201,210,255,.35);padding:14px 0}
+details:first-of-type{border-top:0;padding-top:0}
+summary{cursor:pointer;list-style:none;font-weight:800;display:flex;gap:10px;align-items:baseline}
+summary::-webkit-details-marker{display:none}
+summary::before{content:'Q';font-family:var(--display);color:var(--gold);flex:none}
+summary::after{content:'▼';margin-left:auto;font-size:12px;color:var(--soft);transition:transform .2s}
+details[open] summary::after{transform:rotate(180deg)}
+.ans{margin-top:8px;padding-left:26px;color:var(--soft)}
+.ans b{color:var(--ink)}
+.price{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0}
+.price div{background:var(--ground);border:3px solid var(--inner);border-radius:8px;padding:10px 6px;text-align:center;min-width:0}
+.price div.rec{border-color:var(--gold)}
+.price b{display:block;font-family:var(--pixel);color:var(--gold);font-size:14px}
+.price strong{display:block;font-family:var(--display);font-weight:400;font-size:19px;color:var(--ink)}
+.price span{display:block;font-size:12px;line-height:1.5;color:var(--soft)}
+.free{display:inline-block;background:var(--mint);color:#000;font-family:var(--pixel);padding:1px 10px;border-radius:4px}
+@media (max-width:480px){.price{grid-template-columns:1fr}.price div{display:grid;grid-template-columns:auto auto;justify-content:space-between;align-items:center;text-align:left;padding:10px 14px;gap:2px 10px}.price b{grid-column:1}.price strong{grid-column:2;grid-row:1/3;font-size:22px}.price span{grid-column:1}.price span br{display:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <div class="eyebrow">▶ NEW QUEST</div>
+    <h1>1週間 英語ビートキャンプ</h1>
+    <p class="lead">いつもの指導を1週間だけ受けられるプランです。無料相談をしなくても、ここからすぐ始められます。</p>
+  </header>
+
+  <section class="win">
+    <div class="tab">参加費</div>
+    <h2>1週間 3,000円</h2>
+    <ul class="list">
+      <li>毎日LINEで<b class="hl">「今日やること」</b>が届く</li>
+      <li>面談は<b class="hl">週1回60分</b>か<b class="hl">週2回30分</b>から選べる</li>
+      <li>面談はすべてオンライン。家から参加できます</li>
+    </ul>
+    <p class="small" style="margin-top:12px">お支払いは銀行振込です。振込先は申し込みのあとLINEでお送りします。</p>
+  </section>
+
+  <section class="win">
+    <div class="tab">流れ</div>
+    <h2>申し込みからスタートまで</h2>
+    <ol class="steps">
+      <li><div><b>下のボタンを押す</b>LINEのトーク画面が開いて「ビートキャンプ申し込み」と入るので、そのまま送信します。</div></li>
+      <li><div><b>振込先と日程の案内</b>まさきから振込先と、1回目の面談の候補日をLINEでお送りします。</div></li>
+      <li><div><b>1回目の面談</b>今の成績や悩みを聞いて、1週間の目標を決めます。</div></li>
+      <li><div><b>毎日の課題スタート</b>次の日から「今日やること」が届きます。</div></li>
+    </ol>
+  </section>
+
+  <section class="win quest">
+    <div class="tab">START</div>
+    <h2>キャンプに申し込む</h2>
+    <a class="btn" href="https://line.me/R/oaMessage/@570dzfqp/?%E3%83%93%E3%83%BC%E3%83%88%E3%82%AD%E3%83%A3%E3%83%B3%E3%83%97%E7%94%B3%E3%81%97%E8%BE%BC%E3%81%BF">LINEで申し込む ▶</a>
+    <p class="small" style="margin-top:12px">まずは話を聞いてみたい人は、<a href="soudan.html" style="color:var(--gold)">無料相談</a>もあります。</p>
+  </section>
+</main>
+</body>
+</html>
